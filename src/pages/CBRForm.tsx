@@ -103,6 +103,30 @@ const PENETRACION_BASE = [
 
 const SIX_COLUMN_LABELS = ['Esp.01 SS', 'Esp.01 SAT', 'Esp.02 SS', 'Esp.02 SAT', 'Esp.03 SS', 'Esp.03 SAT']
 const THREE_SPECIMEN_LABELS = ['Especimen 01', 'Especimen 02', 'Especimen 03']
+const HUMEDAD_INDEX_GROUPS = {
+    sin_saturar: [0, 2, 4],
+    saturado: [1, 3, 5],
+} as const
+const MOLD_CODE_REFERENCE: ReadonlyArray<{ codigo: string; equipo: string }> = [
+    { codigo: 'INS-173', equipo: 'MOLDE 11' },
+    { codigo: 'INS-174', equipo: 'MOLDE 12' },
+    { codigo: 'INS-175', equipo: 'MOLDE 13' },
+    { codigo: 'INS-030', equipo: 'MOLDE 1' },
+    { codigo: 'INS-031', equipo: 'MOLDE 2' },
+    { codigo: 'INS-032', equipo: 'MOLDE 3' },
+    { codigo: 'INS-027', equipo: 'MOLDE 4' },
+    { codigo: 'INS-028', equipo: 'MOLDE 5' },
+    { codigo: 'INS-029', equipo: 'MOLDE 6' },
+    { codigo: 'INS-033', equipo: 'MOLDE 7' },
+    { codigo: 'INS-034', equipo: 'MOLDE 8' },
+    { codigo: 'INS-035', equipo: 'MOLDE 9' },
+    { codigo: 'INS-200', equipo: 'MOLDE A' },
+    { codigo: 'INS-201', equipo: 'MOLDE B' },
+    { codigo: 'INS-202', equipo: 'MOLDE C' },
+    { codigo: 'INS-203', equipo: 'MOLDE E' },
+    { codigo: 'INS-204', equipo: 'MOLDE H' },
+    { codigo: 'INS-205', equipo: 'MOLDE L' },
+]
 
 const EMPTY_SIX_NUMBERS = () => Array.from({ length: 6 }, () => null as number | null)
 const EMPTY_SIX_STRINGS = () => Array.from({ length: 6 }, () => null as string | null)
@@ -191,6 +215,12 @@ type EquipoKey =
     | 'equipo_pison'
     | 'equipo_balanza_1g'
     | 'equipo_balanza_01g'
+
+interface HumedadResumenRow {
+    muestra: string
+    valor: number | null
+    estado: 'Cumple' | 'No cumple' | '-'
+}
 
 const EQUIPO_OPTIONS: Record<EquipoKey, string[]> = {
     equipo_cbr: ['-', 'EQP-0026'],
@@ -286,6 +316,51 @@ export default function CBRForm() {
             return Math.round((humedoTara - tara) * 100) / 100
         })
     }, [form.masa_suelo_humedo_tara_g_por_columna, form.masa_tara_g_por_columna])
+
+    const humedadResumen = useMemo(() => {
+        const calculateHumedad = (index: number): number | null => {
+            const masaHumeda = masaSueloHumedoPorColumna[index]
+            const masaSecaTara = form.masa_suelo_seco_tara_g_por_columna[index]
+            const tara = form.masa_tara_g_por_columna[index]
+
+            if (masaHumeda == null || masaSecaTara == null || tara == null) return null
+
+            const masaSeca = masaSecaTara - tara
+            if (!Number.isFinite(masaSeca) || masaSeca <= 0) return null
+
+            const humedad = ((masaHumeda - masaSeca) / masaSeca) * 100
+            return Math.round(humedad * 100) / 100
+        }
+
+        const buildRows = (indexes: readonly number[]): HumedadResumenRow[] => {
+            return indexes.map((index, rowIdx) => {
+                const valor = calculateHumedad(index)
+                const estado: HumedadResumenRow['estado'] =
+                    valor == null
+                        ? 'No cumple'
+                        : form.optimo_contenido_humedad == null
+                            ? '-'
+                            : Math.abs(valor - form.optimo_contenido_humedad) <= 2
+                                ? 'Cumple'
+                                : 'No cumple'
+                return {
+                    muestra: `Esp.${String(rowIdx + 1).padStart(2, '0')}`,
+                    valor,
+                    estado,
+                }
+            })
+        }
+
+        return {
+            sin_saturar: buildRows(HUMEDAD_INDEX_GROUPS.sin_saturar),
+            saturado: buildRows(HUMEDAD_INDEX_GROUPS.saturado),
+        }
+    }, [
+        masaSueloHumedoPorColumna,
+        form.masa_suelo_seco_tara_g_por_columna,
+        form.masa_tara_g_por_columna,
+        form.optimo_contenido_humedad,
+    ])
 
     useEffect(() => {
         if (!editingEnsayoId) return
@@ -386,7 +461,8 @@ export default function CBRForm() {
                 </div>
             )}
 
-            <div className="space-y-5">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-5">
                 <Section title="Encabezado" icon={<FlaskConical className="h-4 w-4" />}>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <Input
@@ -769,6 +845,18 @@ export default function CBRForm() {
                         }
                     </button>
                 </div>
+                </div>
+
+                <div className="lg:col-span-1">
+                    <div className="sticky top-4 space-y-4">
+                        <HumedadResumenTable
+                            sinSaturar={humedadResumen.sin_saturar}
+                            saturado={humedadResumen.saturado}
+                            humedadObjetivo={form.optimo_contenido_humedad}
+                        />
+                        <MoldCodeReferenceTable />
+                    </div>
+                </div>
             </div>
         </div>
     )
@@ -786,6 +874,102 @@ function Section({ title, icon, children }: {
                 <h2 className="text-sm font-semibold text-foreground">{title}</h2>
             </div>
             <div className="p-4">{children}</div>
+        </div>
+    )
+}
+
+function HumedadResumenTable({
+    sinSaturar,
+    saturado,
+    humedadObjetivo,
+}: {
+    sinSaturar: HumedadResumenRow[]
+    saturado: HumedadResumenRow[]
+    humedadObjetivo?: number
+}) {
+    return (
+        <div className="bg-card border border-border rounded-lg shadow-sm">
+            <div className="px-4 py-2.5 border-b border-border bg-muted/50 rounded-t-lg">
+                <h2 className="text-sm font-semibold text-foreground">C.H Referencial</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                    Objetivo: {humedadObjetivo != null ? `${humedadObjetivo}%` : '-'}
+                </p>
+            </div>
+            <div className="p-4">
+                <div className="overflow-hidden rounded-md border border-border">
+                    <table className="w-full text-xs">
+                        <thead className="bg-sky-100">
+                            <tr>
+                                <th className="px-2 py-1.5 text-left border-b border-r border-border">C.H SIN SATURAR</th>
+                                <th className="px-2 py-1.5 text-center border-b border-border">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sinSaturar.map((row) => (
+                                <tr key={`ss-${row.muestra}`}>
+                                    <td className="px-2 py-1.5 border-b border-r border-border">
+                                        <span className="font-medium">{row.muestra}</span>
+                                        <span className="ml-2 text-muted-foreground">{row.valor == null ? '#DIV/0!' : `${row.valor.toFixed(2)}%`}</span>
+                                    </td>
+                                    <td className="px-2 py-1.5 border-b border-border text-center">{row.estado}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="overflow-hidden rounded-md border border-border mt-3">
+                    <table className="w-full text-xs">
+                        <thead className="bg-sky-100">
+                            <tr>
+                                <th className="px-2 py-1.5 text-left border-b border-r border-border">C.H SATURADO</th>
+                                <th className="px-2 py-1.5 text-center border-b border-border">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {saturado.map((row) => (
+                                <tr key={`sat-${row.muestra}`}>
+                                    <td className="px-2 py-1.5 border-b border-r border-border">
+                                        <span className="font-medium">{row.muestra}</span>
+                                        <span className="ml-2 text-muted-foreground">{row.valor == null ? '#DIV/0!' : `${row.valor.toFixed(2)}%`}</span>
+                                    </td>
+                                    <td className="px-2 py-1.5 border-b border-border text-center">{row.estado}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function MoldCodeReferenceTable() {
+    return (
+        <div className="bg-card border border-border rounded-lg shadow-sm">
+            <div className="px-4 py-2.5 border-b border-border bg-muted/50 rounded-t-lg">
+                <h2 className="text-sm font-semibold text-foreground">Codigos / Equipos Utilizado</h2>
+            </div>
+            <div className="p-4">
+                <div className="overflow-hidden rounded-md border border-border">
+                    <table className="w-full text-xs">
+                        <thead className="bg-sky-100">
+                            <tr>
+                                <th className="px-2 py-1.5 border-b border-r border-border text-center">CODIGOS</th>
+                                <th className="px-2 py-1.5 border-b border-border text-center">EQUIPOS UTILIZADO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {MOLD_CODE_REFERENCE.map((entry) => (
+                                <tr key={entry.codigo}>
+                                    <td className="px-2 py-1.5 border-b border-r border-border text-center">{entry.codigo}</td>
+                                    <td className="px-2 py-1.5 border-b border-border text-center">{entry.equipo}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     )
 }
