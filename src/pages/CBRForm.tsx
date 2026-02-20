@@ -17,13 +17,6 @@ import type {
 
 const getCurrentYearShort = () => new Date().getFullYear().toString().slice(-2)
 
-const formatTodayShortDate = () => {
-    const now = new Date()
-    const day = String(now.getDate()).padStart(2, '0')
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    return `${day}/${month}/${getCurrentYearShort()}`
-}
-
 const normalizeMuestraCode = (raw: string): string => {
     const value = raw.trim().toUpperCase()
     if (!value) return ''
@@ -189,7 +182,7 @@ const EMPTY_HINCHAMIENTO_ROWS = () => Array.from({ length: 6 }, (): CBRHinchamie
 const buildInitialState = (): CBRPayload => ({
     muestra: '',
     numero_ot: '',
-    fecha_ensayo: formatTodayShortDate(),
+    fecha_ensayo: '',
     realizado_por: '',
 
     sobretamano_porcentaje: undefined,
@@ -227,10 +220,10 @@ const buildInitialState = (): CBRPayload => ({
     equipo_balanza_01g: '-',
 
     observaciones: '',
-    revisado_por: '',
-    revisado_fecha: '',
-    aprobado_por: '',
-    aprobado_fecha: '',
+    revisado_por: 'FABIAN LA ROSA',
+    revisado_fecha: '-',
+    aprobado_por: 'IRMA COAQUIRA',
+    aprobado_fecha: '-',
 })
 
 type NumericArrayKey =
