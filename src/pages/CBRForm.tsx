@@ -320,12 +320,13 @@ export default function CBRForm() {
     const humedadResumen = useMemo(() => {
         const calculateHumedad = (index: number): number | null => {
             const masaHumeda = masaSueloHumedoPorColumna[index]
-            const masaSecaTara = form.masa_suelo_seco_tara_g_por_columna[index]
+            const masaSecaTaraConstante = form.masa_suelo_seco_tara_constante_g_por_columna[index]
             const tara = form.masa_tara_g_por_columna[index]
 
-            if (masaHumeda == null || masaSecaTara == null || tara == null) return null
+            if (masaHumeda == null || masaSecaTaraConstante == null || tara == null) return null
 
-            const masaSeca = masaSecaTara - tara
+            // Replica la formula del template Excel (S30:S36): (col32 - (col34 - col30)) / (col34 - col30) * 100
+            const masaSeca = masaSecaTaraConstante - tara
             if (!Number.isFinite(masaSeca) || masaSeca <= 0) return null
 
             const humedad = ((masaHumeda - masaSeca) / masaSeca) * 100
@@ -357,7 +358,7 @@ export default function CBRForm() {
         }
     }, [
         masaSueloHumedoPorColumna,
-        form.masa_suelo_seco_tara_g_por_columna,
+        form.masa_suelo_seco_tara_constante_g_por_columna,
         form.masa_tara_g_por_columna,
         form.optimo_contenido_humedad,
     ])
