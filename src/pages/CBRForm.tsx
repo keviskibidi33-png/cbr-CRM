@@ -127,11 +127,25 @@ const MOLD_CODE_REFERENCE: ReadonlyArray<{ codigo: string; equipo: string }> = [
     { codigo: 'INS-204', equipo: 'MOLDE H' },
     { codigo: 'INS-205', equipo: 'MOLDE L' },
 ]
+const CODE_DROPDOWN_OPTIONS = [
+    '-',
+    'INS-000',
+    ...Array.from(new Set(MOLD_CODE_REFERENCE.map(({ codigo }) => codigo))),
+]
+const isValidCodeOption = (value: string | null | undefined): value is string => {
+    return typeof value === 'string' && CODE_DROPDOWN_OPTIONS.includes(value)
+}
+const normalizeCodeArray = (values: Array<string | null> | undefined, length: number): Array<string | null> => {
+    return Array.from({ length }, (_, idx) => {
+        const raw = values?.[idx]
+        return isValidCodeOption(raw) ? raw : '-'
+    })
+}
 
 const EMPTY_SIX_NUMBERS = () => Array.from({ length: 6 }, () => null as number | null)
-const EMPTY_SIX_STRINGS = () => Array.from({ length: 6 }, () => null as string | null)
+const EMPTY_SIX_STRINGS = () => Array.from({ length: 6 }, () => '-' as string | null)
 const EMPTY_THREE_NUMBERS = () => [56, 25, 10].map(v => v as number | null)
-const EMPTY_THREE_STRINGS = () => ['INS-000', 'INS-000', 'INS-000'].map(v => v as string | null)
+const EMPTY_THREE_STRINGS = () => ['-', '-', '-'].map(v => v as string | null)
 const EMPTY_PENETRACION_ROWS = () => Array.from({ length: 12 }, (): CBRLecturaPenetracionRow => ({
     tension_standard: undefined,
     lectura_dial_esp_01: undefined,
@@ -376,7 +390,10 @@ export default function CBRForm() {
                     return
                 }
                 if (!cancelled) {
-                    setForm({ ...buildInitialState(), ...detail.payload })
+                    const merged = { ...buildInitialState(), ...detail.payload }
+                    merged.codigo_molde_por_especimen = normalizeCodeArray(merged.codigo_molde_por_especimen, 3)
+                    merged.codigo_tara_por_columna = normalizeCodeArray(merged.codigo_tara_por_columna, 6)
+                    setForm(merged)
                 }
             } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -587,7 +604,11 @@ export default function CBRForm() {
                                         <td className="px-3 py-2 border-r border-border">Codigo de Moldes</td>
                                         {form.codigo_molde_por_especimen.map((value, idx) => (
                                             <td key={`molde-${idx}`} className="px-2 py-2 border-border">
-                                                <TableTextInput value={value || ''} onChange={v => setArrayText('codigo_molde_por_especimen', idx, v)} />
+                                                <TableSelectInput
+                                                    value={value || '-'}
+                                                    options={CODE_DROPDOWN_OPTIONS}
+                                                    onChange={v => setArrayText('codigo_molde_por_especimen', idx, v)}
+                                                />
                                             </td>
                                         ))}
                                     </tr>
@@ -621,9 +642,10 @@ export default function CBRForm() {
                                         values={form.masa_molde_suelo_g_por_columna}
                                         onChange={(idx, raw) => setArrayNum('masa_molde_suelo_g_por_columna', idx, raw)}
                                     />
-                                    <ArrayTextRow
+                                    <ArraySelectRow
                                         label="Codigo tara"
                                         values={form.codigo_tara_por_columna}
+                                        options={CODE_DROPDOWN_OPTIONS}
                                         onChange={(idx, raw) => setArrayText('codigo_tara_por_columna', idx, raw)}
                                     />
                                     <ArrayNumberRow
@@ -1070,6 +1092,27 @@ function TableTextInput({ value, onChange }: {
     )
 }
 
+function TableSelectInput({ value, options, onChange }: {
+    value: string
+    options: string[]
+    onChange: (raw: string) => void
+}) {
+    return (
+        <div className="relative">
+            <select
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                className="w-full h-8 pl-2 pr-7 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+                {options.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                ))}
+            </select>
+            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        </div>
+    )
+}
+
 function TableNumInput({ value, onChange }: {
     value: number | undefined | null
     onChange: (raw: string) => void
@@ -1118,13 +1161,15 @@ function ArrayNumberRow({
     )
 }
 
-function ArrayTextRow({
+function ArraySelectRow({
     label,
     values,
+    options,
     onChange,
 }: {
     label: string
     values: Array<string | null>
+    options: string[]
     onChange: (idx: number, raw: string) => void
 }) {
     return (
@@ -1132,7 +1177,7 @@ function ArrayTextRow({
             <td className="px-3 py-2 border-r border-b border-border">{label}</td>
             {values.map((value, idx) => (
                 <td key={`${label}-${idx}`} className="px-2 py-2 border-b border-border">
-                    <TableTextInput value={value || ''} onChange={raw => onChange(idx, raw)} />
+                    <TableSelectInput value={value || '-'} options={options} onChange={raw => onChange(idx, raw)} />
                 </td>
             ))}
         </tr>
