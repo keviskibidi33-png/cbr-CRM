@@ -1,5 +1,6 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
+import axios from 'axios'
 import toast from 'react-hot-toast'
 import { ChevronDown, Download, Loader2, FlaskConical, Gauge } from 'lucide-react'
 import {
@@ -127,11 +128,36 @@ const MOLD_CODE_REFERENCE: ReadonlyArray<{ codigo: string; equipo: string }> = [
     { codigo: 'INS-204', equipo: 'MOLDE H' },
     { codigo: 'INS-205', equipo: 'MOLDE L' },
 ]
+type DropdownOption = { value: string; label: string }
+
 const CODE_DROPDOWN_OPTIONS = [
     '-',
     'INS-000',
     ...Array.from(new Set(MOLD_CODE_REFERENCE.map(({ codigo }) => codigo))),
 ]
+const GOLPES_ALLOWED_VALUES = new Set([56, 25, 10])
+const GOLPES_DROPDOWN_OPTIONS: DropdownOption[] = [
+    { value: '-', label: '-' },
+    { value: '56', label: '56' },
+    { value: '25', label: '25' },
+    { value: '10', label: '10' },
+]
+const CODE_LABEL_BY_VALUE: Record<string, string> = {
+    '-': '-',
+    'INS-000': 'INS-000',
+    ...Object.fromEntries(MOLD_CODE_REFERENCE.map(({ codigo, equipo }) => [codigo, `${codigo} / ${equipo}`])),
+}
+const CODE_DROPDOWN_DISPLAY_OPTIONS: DropdownOption[] = CODE_DROPDOWN_OPTIONS.map((value) => ({
+    value,
+    label: CODE_LABEL_BY_VALUE[value] ?? value,
+}))
+const normalizeGolpesArray = (values: Array<number | null> | undefined): Array<number | null> => {
+    return Array.from({ length: 3 }, (_, idx) => {
+        const raw = values?.[idx]
+        const parsed = Number(raw)
+        return Number.isFinite(parsed) && GOLPES_ALLOWED_VALUES.has(parsed) ? parsed : null
+    })
+}
 const isValidCodeOption = (value: string | null | undefined): value is string => {
     return typeof value === 'string' && CODE_DROPDOWN_OPTIONS.includes(value)
 }
@@ -391,6 +417,7 @@ export default function CBRForm() {
                 }
                 if (!cancelled) {
                     const merged = { ...buildInitialState(), ...detail.payload }
+                    merged.golpes_por_especimen = normalizeGolpesArray(merged.golpes_por_especimen)
                     merged.codigo_molde_por_especimen = normalizeCodeArray(merged.codigo_molde_por_especimen, 3)
                     merged.codigo_tara_por_columna = normalizeCodeArray(merged.codigo_tara_por_columna, 6)
                     setForm(merged)
@@ -448,7 +475,13 @@ export default function CBRForm() {
             setEditingEnsayoId(null)
             closeParentModalIfEmbedded()
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Error desconocido'
+            let msg = err instanceof Error ? err.message : 'Error desconocido'
+            if (axios.isAxiosError(err)) {
+                const detail = err.response?.data?.detail
+                if (typeof detail === 'string' && detail.trim()) {
+                    msg = detail
+                }
+            }
             toast.error(`Error guardando formato CBR: ${msg}`)
         } finally {
             setLoading(false)
@@ -596,7 +629,11 @@ export default function CBRForm() {
                                         <td className="px-3 py-2 border-r border-b border-border">N Golpes (56-25-10)</td>
                                         {form.golpes_por_especimen.map((value, idx) => (
                                             <td key={`golpes-${idx}`} className="px-2 py-2 border-b border-border">
-                                                <TableNumInput value={value} onChange={v => setArrayNum('golpes_por_especimen', idx, v)} />
+                                                <TableSelectInput
+                                                    value={value == null ? '-' : String(value)}
+                                                    options={GOLPES_DROPDOWN_OPTIONS}
+                                                    onChange={v => setArrayNum('golpes_por_especimen', idx, v)}
+                                                />
                                             </td>
                                         ))}
                                     </tr>
@@ -606,7 +643,7 @@ export default function CBRForm() {
                                             <td key={`molde-${idx}`} className="px-2 py-2 border-border">
                                                 <TableSelectInput
                                                     value={value || '-'}
-                                                    options={CODE_DROPDOWN_OPTIONS}
+                                                    options={CODE_DROPDOWN_DISPLAY_OPTIONS}
                                                     onChange={v => setArrayText('codigo_molde_por_especimen', idx, v)}
                                                 />
                                             </td>
@@ -645,7 +682,7 @@ export default function CBRForm() {
                                     <ArraySelectRow
                                         label="Codigo tara"
                                         values={form.codigo_tara_por_columna}
-                                        options={CODE_DROPDOWN_OPTIONS}
+                                        options={CODE_DROPDOWN_DISPLAY_OPTIONS}
                                         onChange={(idx, raw) => setArrayText('codigo_tara_por_columna', idx, raw)}
                                     />
                                     <ArrayNumberRow
@@ -1094,7 +1131,7 @@ function TableTextInput({ value, onChange }: {
 
 function TableSelectInput({ value, options, onChange }: {
     value: string
-    options: string[]
+    options: DropdownOption[]
     onChange: (raw: string) => void
 }) {
     return (
@@ -1105,7 +1142,7 @@ function TableSelectInput({ value, options, onChange }: {
                 className="w-full h-8 pl-2 pr-7 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
             >
                 {options.map(option => (
-                    <option key={option} value={option}>{option}</option>
+                    <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -1169,7 +1206,7 @@ function ArraySelectRow({
 }: {
     label: string
     values: Array<string | null>
-    options: string[]
+    options: DropdownOption[]
     onChange: (idx: number, raw: string) => void
 }) {
     return (
