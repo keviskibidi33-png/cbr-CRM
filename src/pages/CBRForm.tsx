@@ -80,6 +80,23 @@ const normalizeFlexibleDate = (raw: string): string => {
     return value
 }
 
+const normalizeTime = (raw: string): string => {
+    const value = raw.trim()
+    if (!value) return ''
+
+    const digits = value.replace(/\D/g, '')
+    const pad2 = (part: string) => part.padStart(2, '0').slice(-2)
+
+    if (value.includes(':')) {
+        const [h = '', m = '', s = ''] = value.split(':').map(part => part.trim())
+        return `${pad2(h || '0')}:${pad2(m || '0')}:${pad2(s || '0')}`
+    }
+
+    if (digits.length <= 2) return `${pad2(digits)}:00:00`
+    if (digits.length <= 4) return `${pad2(digits.slice(0, 2))}:${pad2(digits.slice(2, 4))}:00`
+    return `${pad2(digits.slice(0, 2))}:${pad2(digits.slice(2, 4))}:${pad2(digits.slice(4, 6))}`
+}
+
 const PENETRACION_BASE = [
     { tiempo: '0:00', pulg: 0.0, mm: 0.0 },
     { tiempo: '0:30', pulg: 0.025, mm: 0.64 },
@@ -771,10 +788,20 @@ export default function CBRForm() {
                                         {Array.from({ length: 6 }, (_, idx) => (
                                             <tr key={`hinch-${idx}`}>
                                                 <td className="px-2 py-2 border-b border-r border-border">
-                                                    <TableTextInput value={form.hinchamiento[idx]?.fecha || ''} onChange={v => setHinchamiento(idx, 'fecha', v)} />
+                                                    <TableTextInput
+                                                        value={form.hinchamiento[idx]?.fecha || ''}
+                                                        onChange={v => setHinchamiento(idx, 'fecha', v)}
+                                                        onBlur={() => setHinchamiento(idx, 'fecha', normalizeFlexibleDate(form.hinchamiento[idx]?.fecha || ''))}
+                                                        placeholder="DD/MM/AA"
+                                                    />
                                                 </td>
                                                 <td className="px-2 py-2 border-b border-r border-border">
-                                                    <TableTextInput value={form.hinchamiento[idx]?.hora || ''} onChange={v => setHinchamiento(idx, 'hora', v)} />
+                                                    <TableTextInput
+                                                        value={form.hinchamiento[idx]?.hora || ''}
+                                                        onChange={v => setHinchamiento(idx, 'hora', v)}
+                                                        onBlur={() => setHinchamiento(idx, 'hora', normalizeTime(form.hinchamiento[idx]?.hora || ''))}
+                                                        placeholder="00:00:00"
+                                                    />
                                                 </td>
                                                 <td className="px-2 py-2 border-b border-r border-border">
                                                     <TableNumInput value={form.hinchamiento[idx]?.esp_01} onChange={v => setHinchamiento(idx, 'esp_01', v)} />
@@ -1118,15 +1145,19 @@ function EquipmentSelect({ label, value, onChange, options }: {
     return <SelectField label={label} value={value} onChange={onChange} options={options} />
 }
 
-function TableTextInput({ value, onChange }: {
+function TableTextInput({ value, onChange, onBlur, placeholder }: {
     value: string
     onChange: (raw: string) => void
+    onBlur?: () => void
+    placeholder?: string
 }) {
     return (
         <input
             type="text"
             value={value}
             onChange={e => onChange(e.target.value)}
+            onBlur={onBlur}
+            placeholder={placeholder}
             autoComplete="off"
             data-lpignore="true"
             className="w-full h-8 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
