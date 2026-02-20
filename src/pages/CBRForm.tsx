@@ -220,10 +220,10 @@ const buildInitialState = (): CBRPayload => ({
     equipo_balanza_01g: '-',
 
     observaciones: '',
-    revisado_por: 'FABIAN LA ROSA',
-    revisado_fecha: '-',
-    aprobado_por: 'IRMA COAQUIRA',
-    aprobado_fecha: '-',
+    revisado_por: '-',
+    revisado_fecha: '',
+    aprobado_por: '-',
+    aprobado_fecha: '',
 })
 
 type NumericArrayKey =
@@ -264,6 +264,8 @@ const EQUIPO_OPTIONS: Record<EquipoKey, string[]> = {
     equipo_balanza_1g: ['-', 'EQP-0054'],
     equipo_balanza_01g: ['-', 'EQP-0046'],
 }
+const REVISADO_POR_OPTIONS = ['-', 'FABIAN LA ROSA']
+const APROBADO_POR_OPTIONS = ['-', 'IRMA COAQUIRA']
 
 const getEnsayoIdFromQuery = (): number | null => {
     const raw = new URLSearchParams(window.location.search).get('ensayo_id')
@@ -857,7 +859,12 @@ export default function CBRForm() {
 
                 <Section title="Revisado / Aprobado">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <Input label="Revisado por" value={form.revisado_por || ''} onChange={v => set('revisado_por', v)} />
+                        <SelectField
+                            label="Revisado por"
+                            value={form.revisado_por || '-'}
+                            options={REVISADO_POR_OPTIONS}
+                            onChange={v => set('revisado_por', v)}
+                        />
                         <Input
                             label="Fecha revision"
                             value={form.revisado_fecha || ''}
@@ -865,7 +872,12 @@ export default function CBRForm() {
                             onBlur={() => applyFormattedField('revisado_fecha', normalizeFlexibleDate)}
                             placeholder="DD/MM/AA"
                         />
-                        <Input label="Aprobado por" value={form.aprobado_por || ''} onChange={v => set('aprobado_por', v)} />
+                        <SelectField
+                            label="Aprobado por"
+                            value={form.aprobado_por || '-'}
+                            options={APROBADO_POR_OPTIONS}
+                            onChange={v => set('aprobado_por', v)}
+                        />
                         <Input
                             label="Fecha aprobacion"
                             value={form.aprobado_fecha || ''}
