@@ -327,7 +327,7 @@ export default function CBRForm() {
 
             // Replica la formula del template Excel (S30:S36): (col32 - (col34 - col30)) / (col34 - col30) * 100
             const masaSeca = masaSecaTaraConstante - tara
-            if (!Number.isFinite(masaSeca) || masaSeca <= 0) return null
+            if (!Number.isFinite(masaSeca) || masaSeca === 0) return null
 
             const humedad = ((masaHumeda - masaSeca) / masaSeca) * 100
             return Math.round(humedad * 100) / 100
@@ -338,7 +338,7 @@ export default function CBRForm() {
                 const valor = calculateHumedad(index)
                 const estado: HumedadResumenRow['estado'] =
                     valor == null
-                        ? 'No cumple'
+                        ? '-'
                         : form.optimo_contenido_humedad == null
                             ? '-'
                             : Math.abs(valor - form.optimo_contenido_humedad) <= 2
@@ -910,7 +910,7 @@ function HumedadResumenTable({
                                 <tr key={`ss-${row.muestra}`}>
                                     <td className="px-2 py-1.5 border-b border-r border-border">
                                         <span className="font-medium">{row.muestra}</span>
-                                        <span className="ml-2 text-muted-foreground">{row.valor == null ? '#DIV/0!' : `${row.valor.toFixed(2)}%`}</span>
+                                        <span className="ml-2 text-muted-foreground">{row.valor == null ? '-' : `${row.valor.toFixed(2)}%`}</span>
                                     </td>
                                     <td className="px-2 py-1.5 border-b border-border text-center">{row.estado}</td>
                                 </tr>
@@ -932,7 +932,7 @@ function HumedadResumenTable({
                                 <tr key={`sat-${row.muestra}`}>
                                     <td className="px-2 py-1.5 border-b border-r border-border">
                                         <span className="font-medium">{row.muestra}</span>
-                                        <span className="ml-2 text-muted-foreground">{row.valor == null ? '#DIV/0!' : `${row.valor.toFixed(2)}%`}</span>
+                                        <span className="ml-2 text-muted-foreground">{row.valor == null ? '-' : `${row.valor.toFixed(2)}%`}</span>
                                     </td>
                                     <td className="px-2 py-1.5 border-b border-border text-center">{row.estado}</td>
                                 </tr>
