@@ -705,131 +705,131 @@ export default function CBRForm() {
                 <Section title="Ensayo y Determinacion de Humedad">
                     <div className="overflow-x-auto rounded-md border border-border">
                         <table className="w-full min-w-[1100px] text-sm">
-                                <thead className="bg-muted/40">
-                                    <tr>
-                                        <th className="px-3 py-1.5 text-left border-b border-r border-border">Campo</th>
-                                        {THREE_SPECIMEN_LABELS.map((label) => (
-                                            <th key={label} className="px-2 py-1.5 text-center border-b border-border">
-                                                {label}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td className="px-3 py-1 border-r border-b border-border">N Golpes (56-25-10)</td>
-                                        {form.golpes_por_especimen.map((value, idx) => (
-                                            <td key={`golpes-${idx}`} className="px-2 py-1 border-b border-border">
-                                                <TableSelectInputCompact
-                                                    value={value == null ? '-' : String(value)}
-                                                    options={GOLPES_DROPDOWN_OPTIONS}
-                                                    onChange={v => setArrayNum('golpes_por_especimen', idx, v)}
-                                                />
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr>
-                                        <td className="px-3 py-1 border-r border-b border-border">Codigo de Moldes</td>
-                                        {form.codigo_molde_por_especimen.map((value, idx) => (
-                                            <td key={`molde-${idx}`} className="px-2 py-1 border-b border-border">
-                                                <TableSelectInputCompact
-                                                    value={value || '-'}
-                                                    options={CODE_DROPDOWN_DISPLAY_OPTIONS}
-                                                    onChange={v => setArrayText('codigo_molde_por_especimen', idx, v)}
-                                                />
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <ArrayNumberRow
-                                        label="Temperatura de inicio (°C) (18-24°C)"
-                                        values={temperaturaInicioPorEspecimen}
-                                        compact
-                                        onChange={(idx, raw) => setTemperaturaPorEspecimen('temperatura_inicio_c_por_columna', idx, raw)}
-                                    />
-                                    <ArrayNumberRow
-                                        label="Temperatura final (°C) (18-24°C)"
-                                        values={temperaturaFinalPorEspecimen}
-                                        compact
-                                        onChange={(idx, raw) => setTemperaturaPorEspecimen('temperatura_final_c_por_columna', idx, raw)}
-                                    />
-                                </tbody>
-                            </table>
-                        <table className="w-full min-w-[1100px] text-sm">
-                                <thead className="bg-muted/40">
-                                    <tr>
-                                        <th rowSpan={2} className="px-3 py-1.5 text-left border-b border-r border-border">Campo</th>
-                                        {THREE_SPECIMEN_LABELS.map((label) => (
-                                            <th key={`${label}-group`} colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-border">
-                                                {label}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                    <tr>
-                                        {THREE_SPECIMEN_LABELS.flatMap((label) => [
-                                            <th key={`${label}-sin-saturar`} className="px-2 py-1.5 text-center border-b border-r border-border">
-                                                Sin Saturar
-                                            </th>,
-                                            <th key={`${label}-saturado`} className="px-2 py-1.5 text-center border-b border-r border-border">
-                                                Saturado
-                                            </th>,
-                                        ])}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <ArrayNumberRow
-                                        label="Masa de molde + suelo moldeado (g)"
-                                        values={form.masa_molde_suelo_g_por_columna}
-                                        compact
-                                        onChange={(idx, raw) => setArrayNum('masa_molde_suelo_g_por_columna', idx, raw)}
-                                    />
-                                    <tr>
-                                        <td
-                                            colSpan={7}
-                                            className="px-3 py-1.5 border-b border-border bg-muted/30 text-left font-semibold uppercase tracking-wide"
-                                        >
-                                            Determinacion de Humedad
+                            <thead className="bg-muted/40">
+                                <tr>
+                                    <th className="px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase">Ensayo</th>
+                                    {THREE_SPECIMEN_LABELS.map((label) => (
+                                        <th key={`${label}-group`} colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-border">
+                                            {label}
+                                        </th>
+                                    ))}
+                                </tr>
+                                <tr>
+                                    <th className="px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase">Condicion</th>
+                                    {THREE_SPECIMEN_LABELS.flatMap((label) => [
+                                        <th key={`${label}-sin-saturar`} className="px-2 py-1.5 text-center border-b border-r border-border">
+                                            Sin Saturar
+                                        </th>,
+                                        <th key={`${label}-saturado`} className="px-2 py-1.5 text-center border-b border-r border-border">
+                                            Saturado
+                                        </th>,
+                                    ])}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="px-3 py-1 border-r border-b border-border">N Golpes (56-25-10)</td>
+                                    {form.golpes_por_especimen.map((value, idx) => (
+                                        <td key={`golpes-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
+                                            <TableSelectInputCompact
+                                                value={value == null ? '-' : String(value)}
+                                                options={GOLPES_DROPDOWN_OPTIONS}
+                                                onChange={v => setArrayNum('golpes_por_especimen', idx, v)}
+                                            />
                                         </td>
-                                    </tr>
-                                    <ArrayTextRow
-                                        label="Codigo tara"
-                                        values={form.codigo_tara_por_columna}
-                                        compact
-                                        onChange={(idx, raw) => setArrayText('codigo_tara_por_columna', idx, raw)}
-                                    />
-                                    <ArrayNumberRow
-                                        label="Masa de tara (g)"
-                                        values={form.masa_tara_g_por_columna}
-                                        compact
-                                        onChange={(idx, raw) => setArrayNum('masa_tara_g_por_columna', idx, raw)}
-                                    />
-                                    <ArrayNumberRow
-                                        label="Masa de suelo humedo + tara (g)"
-                                        values={form.masa_suelo_humedo_tara_g_por_columna}
-                                        compact
-                                        onChange={(idx, raw) => setArrayNum('masa_suelo_humedo_tara_g_por_columna', idx, raw)}
-                                    />
-                                    <tr>
-                                        <td className="px-3 py-1 border-r border-b border-border font-medium">Masa de suelo humedo (g) (*) Formula fila 32</td>
-                                        {masaSueloHumedoPorColumna.map((value, idx) => (
-                                            <td key={`calc-32-${idx}`} className="px-2 py-1 border-b border-border">
-                                                <TableComputedValueCompact value={value} />
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <ArrayNumberRow
-                                        label="Masa de suelo seco + tara (g)"
-                                        values={form.masa_suelo_seco_tara_g_por_columna}
-                                        compact
-                                        onChange={(idx, raw) => setArrayNum('masa_suelo_seco_tara_g_por_columna', idx, raw)}
-                                    />
-                                    <ArrayNumberRow
-                                        label="Masa de suelo seco + tara (g) constante"
-                                        values={form.masa_suelo_seco_tara_constante_g_por_columna}
-                                        compact
-                                        onChange={(idx, raw) => setArrayNum('masa_suelo_seco_tara_constante_g_por_columna', idx, raw)}
-                                    />
-                                </tbody>
-                            </table>
+                                    ))}
+                                </tr>
+                                <tr>
+                                    <td className="px-3 py-1 border-r border-b border-border">Codigo de Moldes</td>
+                                    {form.codigo_molde_por_especimen.map((value, idx) => (
+                                        <td key={`molde-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
+                                            <TableSelectInputCompact
+                                                value={value || '-'}
+                                                options={CODE_DROPDOWN_DISPLAY_OPTIONS}
+                                                onChange={v => setArrayText('codigo_molde_por_especimen', idx, v)}
+                                            />
+                                        </td>
+                                    ))}
+                                </tr>
+                                <tr>
+                                    <td className="px-3 py-1 border-r border-b border-border">Temperatura de inicio (°C) (18-24°C)</td>
+                                    {temperaturaInicioPorEspecimen.map((value, idx) => (
+                                        <td key={`temp-inicio-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
+                                            <TableNumInputCompact
+                                                value={value}
+                                                onChange={raw => setTemperaturaPorEspecimen('temperatura_inicio_c_por_columna', idx, raw)}
+                                            />
+                                        </td>
+                                    ))}
+                                </tr>
+                                <tr>
+                                    <td className="px-3 py-1 border-r border-b border-border">Temperatura final (°C) (18-24°C)</td>
+                                    {temperaturaFinalPorEspecimen.map((value, idx) => (
+                                        <td key={`temp-final-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
+                                            <TableNumInputCompact
+                                                value={value}
+                                                onChange={raw => setTemperaturaPorEspecimen('temperatura_final_c_por_columna', idx, raw)}
+                                            />
+                                        </td>
+                                    ))}
+                                </tr>
+                                <ArrayNumberRow
+                                    label="Masa de molde + suelo moldeado (g)"
+                                    values={form.masa_molde_suelo_g_por_columna}
+                                    compact
+                                    onChange={(idx, raw) => setArrayNum('masa_molde_suelo_g_por_columna', idx, raw)}
+                                />
+                                <tr>
+                                    <td
+                                        colSpan={7}
+                                        className="px-3 py-1.5 border-b border-border bg-muted/30 text-left font-semibold uppercase tracking-wide"
+                                    >
+                                        Determinacion de Humedad
+                                    </td>
+                                </tr>
+                                <ArrayTextRow
+                                    label="Codigo tara"
+                                    values={form.codigo_tara_por_columna}
+                                    compact
+                                    onChange={(idx, raw) => setArrayText('codigo_tara_por_columna', idx, raw)}
+                                />
+                                <ArrayNumberRow
+                                    label="Masa de tara (g)"
+                                    values={form.masa_tara_g_por_columna}
+                                    compact
+                                    onChange={(idx, raw) => setArrayNum('masa_tara_g_por_columna', idx, raw)}
+                                />
+                                <ArrayNumberRow
+                                    label="Masa de suelo humedo + tara (g)"
+                                    values={form.masa_suelo_humedo_tara_g_por_columna}
+                                    compact
+                                    onChange={(idx, raw) => setArrayNum('masa_suelo_humedo_tara_g_por_columna', idx, raw)}
+                                />
+                                <tr>
+                                    <td className="px-3 py-1 border-r border-b border-border font-medium">Masa de suelo humedo (g) (*) Formula fila 32</td>
+                                    {masaSueloHumedoPorColumna.map((value, idx) => (
+                                        <td
+                                            key={`calc-32-${idx}`}
+                                            className={`px-2 py-1 border-b border-border ${idx < masaSueloHumedoPorColumna.length - 1 ? 'border-r' : ''}`}
+                                        >
+                                            <TableComputedValueCompact value={value} />
+                                        </td>
+                                    ))}
+                                </tr>
+                                <ArrayNumberRow
+                                    label="Masa de suelo seco + tara (g)"
+                                    values={form.masa_suelo_seco_tara_g_por_columna}
+                                    compact
+                                    onChange={(idx, raw) => setArrayNum('masa_suelo_seco_tara_g_por_columna', idx, raw)}
+                                />
+                                <ArrayNumberRow
+                                    label="Masa de suelo seco + tara (g) constante"
+                                    values={form.masa_suelo_seco_tara_constante_g_por_columna}
+                                    compact
+                                    onChange={(idx, raw) => setArrayNum('masa_suelo_seco_tara_constante_g_por_columna', idx, raw)}
+                                />
+                            </tbody>
+                        </table>
                     </div>
                 </Section>
 
@@ -1489,7 +1489,10 @@ function ArrayNumberRow({
         <tr>
             <td className={compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"}>{label}</td>
             {values.map((value, idx) => (
-                <td key={`${label}-${idx}`} className={compact ? "px-2 py-1 border-b border-border" : "px-2 py-2 border-b border-border"}>
+                <td
+                    key={`${label}-${idx}`}
+                    className={`${compact ? "px-2 py-1" : "px-2 py-2"} border-b border-border ${idx < values.length - 1 ? "border-r" : ""}`}
+                >
                     {compact ? (
                         <TableNumInputCompact value={value} onChange={raw => onChange(idx, raw)} />
                     ) : (
@@ -1516,7 +1519,10 @@ function ArrayTextRow({
         <tr>
             <td className={compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"}>{label}</td>
             {values.map((value, idx) => (
-                <td key={`${label}-${idx}`} className={compact ? "px-2 py-1 border-b border-border" : "px-2 py-2 border-b border-border"}>
+                <td
+                    key={`${label}-${idx}`}
+                    className={`${compact ? "px-2 py-1" : "px-2 py-2"} border-b border-border ${idx < values.length - 1 ? "border-r" : ""}`}
+                >
                     {compact ? (
                         <TableTextInputCompact value={value ?? ''} onChange={raw => onChange(idx, raw)} />
                     ) : (
