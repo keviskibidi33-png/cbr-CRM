@@ -880,57 +880,59 @@ export default function CBRForm() {
                 </Section>
 
                 <Section title="Hinchamiento">
-                    <div className="overflow-x-auto rounded-md border border-border">
-                        <table className="w-full min-w-[560px] table-fixed text-sm">
-                            <thead className="bg-muted/40">
-                                <tr>
-                                    <th rowSpan={2} className="w-[96px] px-2 py-1.5 border-b border-r border-border text-center">Fecha</th>
-                                    <th rowSpan={2} className="w-[96px] px-2 py-1.5 border-b border-r border-border text-center">Hora</th>
-                                    <th colSpan={3} className="px-2 py-1.5 border-b border-border text-center">Expansión (mm)</th>
-                                </tr>
-                                <tr>
-                                    <th className="w-[112px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°01</th>
-                                    <th className="w-[112px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°02</th>
-                                    <th className="w-[112px] px-2 py-1.5 border-b border-border text-center">Esp. N°03</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {Array.from({ length: 6 }, (_, idx) => (
-                                    <tr key={`hinch-${idx}`}>
-                                        <td className="px-2 py-1 border-b border-r border-border">
-                                            <TableTextInputCompact
-                                                value={form.hinchamiento[idx]?.fecha || ''}
-                                                onChange={v => setHinchamiento(idx, 'fecha', v)}
-                                                onBlur={() => setHinchamiento(idx, 'fecha', normalizeFlexibleDate(form.hinchamiento[idx]?.fecha || ''))}
-                                                placeholder="DD/MM/AA"
-                                            />
-                                        </td>
-                                        <td className="px-2 py-1 border-b border-r border-border">
-                                            <TableTextInputCompact
-                                                value={form.hinchamiento[idx]?.hora || ''}
-                                                onChange={v => setHinchamiento(idx, 'hora', v)}
-                                                onBlur={() => setHinchamiento(idx, 'hora', normalizeTime(form.hinchamiento[idx]?.hora || ''))}
-                                                placeholder="00:00:00"
-                                            />
-                                        </td>
-                                        <td className="px-2 py-1 border-b border-r border-border">
-                                            <TableNumInputCompact value={form.hinchamiento[idx]?.esp_01} onChange={v => setHinchamiento(idx, 'esp_01', v)} />
-                                        </td>
-                                        <td className="px-2 py-1 border-b border-r border-border">
-                                            <TableNumInputCompact value={form.hinchamiento[idx]?.esp_02} onChange={v => setHinchamiento(idx, 'esp_02', v)} />
-                                        </td>
-                                        <td className="px-2 py-1 border-b border-border">
-                                            <TableNumInputCompact value={form.hinchamiento[idx]?.esp_03} onChange={v => setHinchamiento(idx, 'esp_03', v)} />
-                                        </td>
+                    <div className="rounded-md border border-border bg-background p-3">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[520px] table-fixed text-sm">
+                                <thead className="bg-muted/40">
+                                    <tr>
+                                        <th rowSpan={2} className="w-[88px] px-2 py-1.5 border-b border-r border-border text-center">Fecha</th>
+                                        <th rowSpan={2} className="w-[88px] px-2 py-1.5 border-b border-r border-border text-center">Hora</th>
+                                        <th colSpan={3} className="px-2 py-1.5 border-b border-border text-center">Expansión (mm)</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                    <tr>
+                                        <th className="w-[102px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°01</th>
+                                        <th className="w-[102px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°02</th>
+                                        <th className="w-[102px] px-2 py-1.5 border-b border-border text-center">Esp. N°03</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Array.from({ length: 6 }, (_, idx) => (
+                                        <tr key={`hinch-${idx}`}>
+                                            <td className="px-2 py-1 border-b border-r border-border">
+                                                <TableTextInputCompact
+                                                    value={form.hinchamiento[idx]?.fecha || ''}
+                                                    onChange={v => setHinchamiento(idx, 'fecha', v)}
+                                                    onBlur={() => setHinchamiento(idx, 'fecha', normalizeFlexibleDate(form.hinchamiento[idx]?.fecha || ''))}
+                                                    placeholder="DD/MM/YY"
+                                                />
+                                            </td>
+                                            <td className="px-2 py-1 border-b border-r border-border">
+                                                <TableTextInputCompact
+                                                    value={form.hinchamiento[idx]?.hora || ''}
+                                                    onChange={v => setHinchamiento(idx, 'hora', v)}
+                                                    onBlur={() => setHinchamiento(idx, 'hora', normalizeTime(form.hinchamiento[idx]?.hora || ''))}
+                                                    placeholder="00:00:00"
+                                                />
+                                            </td>
+                                            <td className="px-2 py-1 border-b border-r border-border">
+                                                <TableNumInputCompact value={form.hinchamiento[idx]?.esp_01} onChange={v => setHinchamiento(idx, 'esp_01', v)} />
+                                            </td>
+                                            <td className="px-2 py-1 border-b border-r border-border">
+                                                <TableNumInputCompact value={form.hinchamiento[idx]?.esp_02} onChange={v => setHinchamiento(idx, 'esp_02', v)} />
+                                            </td>
+                                            <td className="px-2 py-1 border-b border-border">
+                                                <TableNumInputCompact value={form.hinchamiento[idx]?.esp_03} onChange={v => setHinchamiento(idx, 'esp_03', v)} />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </Section>
 
                 <Section title="Equipos">
-                    <div className="space-y-3">
+                    <div className="rounded-md border border-border bg-background p-3 space-y-3">
                         <EquipmentSelect
                             label="Equipo CBR"
                             value={form.equipo_cbr || '-'}
