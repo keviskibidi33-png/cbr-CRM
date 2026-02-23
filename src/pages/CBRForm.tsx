@@ -138,8 +138,7 @@ const normalizePenetracionRows = (rows: CBRLecturaPenetracionRow[] | undefined):
     })
 }
 
-const SIX_COLUMN_LABELS = ['Esp.01 SS', 'Esp.01 SAT', 'Esp.02 SS', 'Esp.02 SAT', 'Esp.03 SS', 'Esp.03 SAT']
-const THREE_SPECIMEN_LABELS = ['Especimen 01', 'Especimen 02', 'Especimen 03']
+const THREE_SPECIMEN_LABELS = ['Especimen N°01', 'Especimen N°02', 'Especimen N°03']
 const HUMEDAD_INDEX_GROUPS = {
     sin_saturar: [0, 2, 4],
     saturado: [1, 3, 5],
@@ -209,6 +208,18 @@ const normalizeFreeTextArray = (values: Array<string | null> | undefined, length
         if (typeof raw !== 'string') return null
         const normalized = raw.trim()
         return normalized === '' ? null : normalized
+    })
+}
+const collapseSixToThree = (values: Array<number | null>): Array<number | null> => {
+    return [0, 1, 2].map((specimenIdx) => {
+        const base = specimenIdx * 2
+        return values[base] ?? values[base + 1] ?? null
+    })
+}
+const expandThreeToSix = (values: Array<number | null>): Array<number | null> => {
+    return [0, 1, 2].flatMap((specimenIdx) => {
+        const value = values[specimenIdx] ?? null
+        return [value, value]
     })
 }
 
@@ -283,6 +294,7 @@ type NumericArrayKey =
     | 'masa_suelo_seco_tara_constante_g_por_columna'
 
 type StringArrayKey = 'codigo_molde_por_especimen' | 'codigo_tara_por_columna'
+type TemperaturaSixKey = 'temperatura_inicio_c_por_columna' | 'temperatura_final_c_por_columna'
 type DateFieldKey = 'fecha_ensayo' | 'revisado_fecha' | 'aprobado_fecha'
 type PenetracionKey = keyof CBRLecturaPenetracionRow
 type HinchamientoKey = keyof CBRHinchamientoRow
@@ -353,6 +365,18 @@ export default function CBRForm() {
         })
     }, [])
 
+    const setTemperaturaPorEspecimen = useCallback((key: TemperaturaSixKey, specimenIndex: number, raw: string) => {
+        const parsed = raw === '' ? null : parseFloat(raw)
+        const value = Number.isFinite(parsed as number) ? (parsed as number) : null
+        setForm(prev => {
+            const next = [...prev[key]]
+            const base = specimenIndex * 2
+            next[base] = value
+            next[base + 1] = value
+            return { ...prev, [key]: next }
+        })
+    }, [])
+
     const setPenetracion = useCallback((index: number, field: PenetracionKey, raw: string) => {
         setForm(prev => {
             const nextRows = [...prev.lecturas_penetracion]
@@ -408,6 +432,15 @@ export default function CBRForm() {
         })
     }, [form.masa_suelo_humedo_tara_g_por_columna, form.masa_tara_g_por_columna])
 
+    const temperaturaInicioPorEspecimen = useMemo(
+        () => collapseSixToThree(form.temperatura_inicio_c_por_columna),
+        [form.temperatura_inicio_c_por_columna],
+    )
+    const temperaturaFinalPorEspecimen = useMemo(
+        () => collapseSixToThree(form.temperatura_final_c_por_columna),
+        [form.temperatura_final_c_por_columna],
+    )
+
     const humedadResumen = useMemo(() => {
         const calculateHumedad = (index: number): number | null => {
             const masaHumeda = masaSueloHumedoPorColumna[index]
@@ -436,7 +469,7 @@ export default function CBRForm() {
                                 ? 'Cumple'
                                 : 'No cumple'
                 return {
-                    muestra: `Esp.${String(rowIdx + 1).padStart(2, '0')}`,
+                    muestra: `Especimen N°${String(rowIdx + 1).padStart(2, '0')}`,
                     valor,
                     estado,
                 }
@@ -515,6 +548,8 @@ export default function CBRForm() {
         try {
             const payload: CBRPayload = {
                 ...form,
+                temperatura_inicio_c_por_columna: expandThreeToSix(temperaturaInicioPorEspecimen),
+                temperatura_final_c_por_columna: expandThreeToSix(temperaturaFinalPorEspecimen),
                 lecturas_penetracion: normalizePenetracionRows(form.lecturas_penetracion),
             }
             if (withDownload) {
@@ -672,9 +707,9 @@ export default function CBRForm() {
                         <table className="w-full min-w-[1100px] text-sm">
                                 <thead className="bg-muted/40">
                                     <tr>
-                                        <th className="px-3 py-2 text-left border-b border-r border-border">Campo</th>
+                                        <th className="px-3 py-1.5 text-left border-b border-r border-border">Campo</th>
                                         {THREE_SPECIMEN_LABELS.map((label) => (
-                                            <th key={label} className="px-2 py-2 text-center border-b border-border">
+                                            <th key={label} className="px-2 py-1.5 text-center border-b border-border">
                                                 {label}
                                             </th>
                                         ))}
@@ -682,10 +717,10 @@ export default function CBRForm() {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td className="px-3 py-2 border-r border-b border-border">N Golpes (56-25-10)</td>
+                                        <td className="px-3 py-1 border-r border-b border-border">N Golpes (56-25-10)</td>
                                         {form.golpes_por_especimen.map((value, idx) => (
-                                            <td key={`golpes-${idx}`} className="px-2 py-2 border-b border-border">
-                                                <TableSelectInput
+                                            <td key={`golpes-${idx}`} className="px-2 py-1 border-b border-border">
+                                                <TableSelectInputCompact
                                                     value={value == null ? '-' : String(value)}
                                                     options={GOLPES_DROPDOWN_OPTIONS}
                                                     onChange={v => setArrayNum('golpes_por_especimen', idx, v)}
@@ -694,10 +729,10 @@ export default function CBRForm() {
                                         ))}
                                     </tr>
                                     <tr>
-                                        <td className="px-3 py-2 border-r border-b border-border">Codigo de Moldes</td>
+                                        <td className="px-3 py-1 border-r border-b border-border">Codigo de Moldes</td>
                                         {form.codigo_molde_por_especimen.map((value, idx) => (
-                                            <td key={`molde-${idx}`} className="px-2 py-2 border-b border-border">
-                                                <TableSelectInput
+                                            <td key={`molde-${idx}`} className="px-2 py-1 border-b border-border">
+                                                <TableSelectInputCompact
                                                     value={value || '-'}
                                                     options={CODE_DROPDOWN_DISPLAY_OPTIONS}
                                                     onChange={v => setArrayText('codigo_molde_por_especimen', idx, v)}
@@ -705,37 +740,52 @@ export default function CBRForm() {
                                             </td>
                                         ))}
                                     </tr>
+                                    <ArrayNumberRow
+                                        label="Temperatura de inicio (°C) (18-24°C)"
+                                        values={temperaturaInicioPorEspecimen}
+                                        compact
+                                        onChange={(idx, raw) => setTemperaturaPorEspecimen('temperatura_inicio_c_por_columna', idx, raw)}
+                                    />
+                                    <ArrayNumberRow
+                                        label="Temperatura final (°C) (18-24°C)"
+                                        values={temperaturaFinalPorEspecimen}
+                                        compact
+                                        onChange={(idx, raw) => setTemperaturaPorEspecimen('temperatura_final_c_por_columna', idx, raw)}
+                                    />
                                 </tbody>
                             </table>
                         <table className="w-full min-w-[1100px] text-sm">
                                 <thead className="bg-muted/40">
                                     <tr>
-                                        <th className="px-3 py-2 text-left border-b border-r border-border">Campo</th>
-                                        {SIX_COLUMN_LABELS.map((label) => (
-                                            <th key={label} className="px-2 py-2 text-center border-b border-border">{label}</th>
+                                        <th rowSpan={2} className="px-3 py-1.5 text-left border-b border-r border-border">Campo</th>
+                                        {THREE_SPECIMEN_LABELS.map((label) => (
+                                            <th key={`${label}-group`} colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-border">
+                                                {label}
+                                            </th>
                                         ))}
+                                    </tr>
+                                    <tr>
+                                        {THREE_SPECIMEN_LABELS.flatMap((label) => [
+                                            <th key={`${label}-sin-saturar`} className="px-2 py-1.5 text-center border-b border-r border-border">
+                                                Sin Saturar
+                                            </th>,
+                                            <th key={`${label}-saturado`} className="px-2 py-1.5 text-center border-b border-r border-border">
+                                                Saturado
+                                            </th>,
+                                        ])}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <ArrayNumberRow
-                                        label="Temperatura de inicio (°C) (18-24°C)"
-                                        values={form.temperatura_inicio_c_por_columna}
-                                        onChange={(idx, raw) => setArrayNum('temperatura_inicio_c_por_columna', idx, raw)}
-                                    />
-                                    <ArrayNumberRow
-                                        label="Temperatura final (°C) (18-24°C)"
-                                        values={form.temperatura_final_c_por_columna}
-                                        onChange={(idx, raw) => setArrayNum('temperatura_final_c_por_columna', idx, raw)}
-                                    />
-                                    <ArrayNumberRow
                                         label="Masa de molde + suelo moldeado (g)"
                                         values={form.masa_molde_suelo_g_por_columna}
+                                        compact
                                         onChange={(idx, raw) => setArrayNum('masa_molde_suelo_g_por_columna', idx, raw)}
                                     />
                                     <tr>
                                         <td
                                             colSpan={7}
-                                            className="px-3 py-2 border-b border-border bg-muted/30 text-center font-semibold uppercase tracking-wide"
+                                            className="px-3 py-1.5 border-b border-border bg-muted/30 text-left font-semibold uppercase tracking-wide"
                                         >
                                             Determinacion de Humedad
                                         </td>
@@ -743,34 +793,39 @@ export default function CBRForm() {
                                     <ArrayTextRow
                                         label="Codigo tara"
                                         values={form.codigo_tara_por_columna}
+                                        compact
                                         onChange={(idx, raw) => setArrayText('codigo_tara_por_columna', idx, raw)}
                                     />
                                     <ArrayNumberRow
                                         label="Masa de tara (g)"
                                         values={form.masa_tara_g_por_columna}
+                                        compact
                                         onChange={(idx, raw) => setArrayNum('masa_tara_g_por_columna', idx, raw)}
                                     />
                                     <ArrayNumberRow
                                         label="Masa de suelo humedo + tara (g)"
                                         values={form.masa_suelo_humedo_tara_g_por_columna}
+                                        compact
                                         onChange={(idx, raw) => setArrayNum('masa_suelo_humedo_tara_g_por_columna', idx, raw)}
                                     />
                                     <tr>
-                                        <td className="px-3 py-2 border-r border-b border-border font-medium">Masa de suelo humedo (g) (*) Formula fila 32</td>
+                                        <td className="px-3 py-1 border-r border-b border-border font-medium">Masa de suelo humedo (g) (*) Formula fila 32</td>
                                         {masaSueloHumedoPorColumna.map((value, idx) => (
-                                            <td key={`calc-32-${idx}`} className="px-2 py-2 border-b border-border">
-                                                <TableComputedValue value={value} />
+                                            <td key={`calc-32-${idx}`} className="px-2 py-1 border-b border-border">
+                                                <TableComputedValueCompact value={value} />
                                             </td>
                                         ))}
                                     </tr>
                                     <ArrayNumberRow
                                         label="Masa de suelo seco + tara (g)"
                                         values={form.masa_suelo_seco_tara_g_por_columna}
+                                        compact
                                         onChange={(idx, raw) => setArrayNum('masa_suelo_seco_tara_g_por_columna', idx, raw)}
                                     />
                                     <ArrayNumberRow
                                         label="Masa de suelo seco + tara (g) constante"
                                         values={form.masa_suelo_seco_tara_constante_g_por_columna}
+                                        compact
                                         onChange={(idx, raw) => setArrayNum('masa_suelo_seco_tara_constante_g_por_columna', idx, raw)}
                                     />
                                 </tbody>
@@ -783,32 +838,32 @@ export default function CBRForm() {
                         <table className="w-full min-w-[1100px] text-sm">
                             <thead className="bg-muted/40">
                                 <tr>
-                                    <th className="px-2 py-2 border-b border-r border-border text-center">Tiempo</th>
-                                    <th className="px-2 py-2 border-b border-r border-border text-center">Penetracion (in)</th>
-                                    <th className="px-2 py-2 border-b border-r border-border text-center">Penetracion (mm)</th>
-                                    <th className="px-2 py-2 border-b border-r border-border text-center">Tension estandar</th>
-                                    <th className="px-2 py-2 border-b border-r border-border text-center">Dial Esp 01</th>
-                                    <th className="px-2 py-2 border-b border-r border-border text-center">Dial Esp 02</th>
-                                    <th className="px-2 py-2 border-b border-border text-center">Dial Esp 03</th>
+                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Tiempo</th>
+                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Penetracion (in)</th>
+                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Penetracion (mm)</th>
+                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Tension estandar</th>
+                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Dial Especimen N°01</th>
+                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Dial Especimen N°02</th>
+                                    <th className="px-2 py-1.5 border-b border-border text-center">Dial Especimen N°03</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {PENETRACION_BASE.map((base, idx) => (
                                     <tr key={base.tiempo}>
-                                        <td className="px-2 py-2 border-b border-r border-border text-center bg-muted/20">{base.tiempo}</td>
-                                        <td className="px-2 py-2 border-b border-r border-border text-center bg-muted/20">{base.pulg.toFixed(3)}</td>
-                                        <td className="px-2 py-2 border-b border-r border-border text-center bg-muted/20">{base.mm.toFixed(2)}</td>
-                                        <td className="px-2 py-2 border-b border-r border-border">
-                                            <TableFixedValue value={getFixedTensionStandard(idx)} />
+                                        <td className="px-2 py-1 border-b border-r border-border text-center bg-muted/20">{base.tiempo}</td>
+                                        <td className="px-2 py-1 border-b border-r border-border text-center bg-muted/20">{base.pulg.toFixed(3)}</td>
+                                        <td className="px-2 py-1 border-b border-r border-border text-center bg-muted/20">{base.mm.toFixed(2)}</td>
+                                        <td className="px-2 py-1 border-b border-r border-border">
+                                            <TableFixedValueCompact value={getFixedTensionStandard(idx)} />
                                         </td>
-                                        <td className="px-2 py-2 border-b border-r border-border">
-                                            <TableNumInput value={form.lecturas_penetracion[idx]?.lectura_dial_esp_01} onChange={v => setPenetracion(idx, 'lectura_dial_esp_01', v)} />
+                                        <td className="px-2 py-1 border-b border-r border-border">
+                                            <TableNumInputCompact value={form.lecturas_penetracion[idx]?.lectura_dial_esp_01} onChange={v => setPenetracion(idx, 'lectura_dial_esp_01', v)} />
                                         </td>
-                                        <td className="px-2 py-2 border-b border-r border-border">
-                                            <TableNumInput value={form.lecturas_penetracion[idx]?.lectura_dial_esp_02} onChange={v => setPenetracion(idx, 'lectura_dial_esp_02', v)} />
+                                        <td className="px-2 py-1 border-b border-r border-border">
+                                            <TableNumInputCompact value={form.lecturas_penetracion[idx]?.lectura_dial_esp_02} onChange={v => setPenetracion(idx, 'lectura_dial_esp_02', v)} />
                                         </td>
-                                        <td className="px-2 py-2 border-b border-border">
-                                            <TableNumInput value={form.lecturas_penetracion[idx]?.lectura_dial_esp_03} onChange={v => setPenetracion(idx, 'lectura_dial_esp_03', v)} />
+                                        <td className="px-2 py-1 border-b border-border">
+                                            <TableNumInputCompact value={form.lecturas_penetracion[idx]?.lectura_dial_esp_03} onChange={v => setPenetracion(idx, 'lectura_dial_esp_03', v)} />
                                         </td>
                                     </tr>
                                 ))}
@@ -836,9 +891,9 @@ export default function CBRForm() {
                                             <th colSpan={3} className="px-2 py-2 border-b border-border text-center">Expansión (mm)</th>
                                         </tr>
                                         <tr>
-                                            <th className="px-2 py-2 border-b border-r border-border text-center">Esp. 01</th>
-                                            <th className="px-2 py-2 border-b border-r border-border text-center">Esp. 02</th>
-                                            <th className="px-2 py-2 border-b border-border text-center">Esp. 03</th>
+                                            <th className="px-2 py-2 border-b border-r border-border text-center">Especimen N°01</th>
+                                            <th className="px-2 py-2 border-b border-r border-border text-center">Especimen N°02</th>
+                                            <th className="px-2 py-2 border-b border-border text-center">Especimen N°03</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1283,6 +1338,26 @@ function TableTextInput({ value, onChange, onBlur, placeholder }: {
     )
 }
 
+function TableTextInputCompact({ value, onChange, onBlur, placeholder }: {
+    value: string
+    onChange: (raw: string) => void
+    onBlur?: () => void
+    placeholder?: string
+}) {
+    return (
+        <input
+            type="text"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            onBlur={onBlur}
+            placeholder={placeholder}
+            autoComplete="off"
+            data-lpignore="true"
+            className="w-full h-7 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+    )
+}
+
 function TableSelectInput({ value, options, onChange }: {
     value: string
     options: DropdownOption[]
@@ -1294,6 +1369,27 @@ function TableSelectInput({ value, options, onChange }: {
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 className="w-full h-8 pl-2 pr-7 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+                {options.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </select>
+            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        </div>
+    )
+}
+
+function TableSelectInputCompact({ value, options, onChange }: {
+    value: string
+    options: DropdownOption[]
+    onChange: (raw: string) => void
+}) {
+    return (
+        <div className="relative">
+            <select
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                className="w-full h-7 pl-2 pr-7 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
             >
                 {options.map(option => (
                     <option key={option.value} value={option.value}>{option.label}</option>
@@ -1321,11 +1417,38 @@ function TableNumInput({ value, onChange }: {
     )
 }
 
+function TableNumInputCompact({ value, onChange }: {
+    value: number | undefined | null
+    onChange: (raw: string) => void
+}) {
+    return (
+        <input
+            type="number"
+            step="any"
+            value={value ?? ''}
+            onChange={e => onChange(e.target.value)}
+            autoComplete="off"
+            data-lpignore="true"
+            className="w-full h-7 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+    )
+}
+
 function TableComputedValue({ value }: {
     value: number | null
 }) {
     return (
         <div className="h-8 px-2 rounded-md border border-input bg-muted/30 text-sm flex items-center justify-center text-foreground font-medium">
+            {value != null ? value : '-'}
+        </div>
+    )
+}
+
+function TableComputedValueCompact({ value }: {
+    value: number | null
+}) {
+    return (
+        <div className="h-7 px-2 rounded-md border border-input bg-muted/30 text-sm flex items-center justify-center text-foreground font-medium">
             {value != null ? value : '-'}
         </div>
     )
@@ -1341,21 +1464,37 @@ function TableFixedValue({ value }: {
     )
 }
 
+function TableFixedValueCompact({ value }: {
+    value?: number
+}) {
+    return (
+        <div className="h-7 px-2 rounded-md border border-input bg-muted/40 text-sm flex items-center justify-center text-foreground font-semibold">
+            {value ?? '-'}
+        </div>
+    )
+}
+
 function ArrayNumberRow({
     label,
     values,
+    compact = false,
     onChange,
 }: {
     label: string
     values: Array<number | null>
+    compact?: boolean
     onChange: (idx: number, raw: string) => void
 }) {
     return (
         <tr>
-            <td className="px-3 py-2 border-r border-b border-border">{label}</td>
+            <td className={compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"}>{label}</td>
             {values.map((value, idx) => (
-                <td key={`${label}-${idx}`} className="px-2 py-2 border-b border-border">
-                    <TableNumInput value={value} onChange={raw => onChange(idx, raw)} />
+                <td key={`${label}-${idx}`} className={compact ? "px-2 py-1 border-b border-border" : "px-2 py-2 border-b border-border"}>
+                    {compact ? (
+                        <TableNumInputCompact value={value} onChange={raw => onChange(idx, raw)} />
+                    ) : (
+                        <TableNumInput value={value} onChange={raw => onChange(idx, raw)} />
+                    )}
                 </td>
             ))}
         </tr>
@@ -1365,18 +1504,24 @@ function ArrayNumberRow({
 function ArrayTextRow({
     label,
     values,
+    compact = false,
     onChange,
 }: {
     label: string
     values: Array<string | null>
+    compact?: boolean
     onChange: (idx: number, raw: string) => void
 }) {
     return (
         <tr>
-            <td className="px-3 py-2 border-r border-b border-border">{label}</td>
+            <td className={compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"}>{label}</td>
             {values.map((value, idx) => (
-                <td key={`${label}-${idx}`} className="px-2 py-2 border-b border-border">
-                    <TableTextInput value={value ?? ''} onChange={raw => onChange(idx, raw)} />
+                <td key={`${label}-${idx}`} className={compact ? "px-2 py-1 border-b border-border" : "px-2 py-2 border-b border-border"}>
+                    {compact ? (
+                        <TableTextInputCompact value={value ?? ''} onChange={raw => onChange(idx, raw)} />
+                    ) : (
+                        <TableTextInput value={value ?? ''} onChange={raw => onChange(idx, raw)} />
+                    )}
                 </td>
             ))}
         </tr>
