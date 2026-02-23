@@ -111,6 +111,32 @@ const PENETRACION_BASE = [
     { tiempo: '8:00', pulg: 0.4, mm: 10.0 },
     { tiempo: '10:00', pulg: 0.5, mm: 13.0 },
 ]
+const TENSION_STANDARD_FIXED_BY_TIEMPO: Record<string, number> = {
+    '2:00': 1000,
+    '4:00': 1500,
+}
+const getFixedTensionStandard = (index: number): number | undefined => {
+    const tiempo = PENETRACION_BASE[index]?.tiempo
+    if (!tiempo) return undefined
+    return TENSION_STANDARD_FIXED_BY_TIEMPO[tiempo]
+}
+const toFiniteNumber = (value: unknown): number | undefined => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+}
+const normalizePenetracionRows = (rows: CBRLecturaPenetracionRow[] | undefined): CBRLecturaPenetracionRow[] => {
+    return Array.from({ length: PENETRACION_BASE.length }, (_, idx): CBRLecturaPenetracionRow => {
+        const source = rows?.[idx]
+        const fixedTension = getFixedTensionStandard(idx)
+        return {
+            tension_standard: fixedTension,
+            lectura_dial_esp_01: toFiniteNumber(source?.lectura_dial_esp_01),
+            lectura_dial_esp_02: toFiniteNumber(source?.lectura_dial_esp_02),
+            lectura_dial_esp_03: toFiniteNumber(source?.lectura_dial_esp_03),
+        }
+    })
+}
 
 const SIX_COLUMN_LABELS = ['Esp.01 SS', 'Esp.01 SAT', 'Esp.02 SS', 'Esp.02 SAT', 'Esp.03 SS', 'Esp.03 SAT']
 const THREE_SPECIMEN_LABELS = ['Especimen 01', 'Especimen 02', 'Especimen 03']
@@ -177,17 +203,20 @@ const normalizeCodeArray = (values: Array<string | null> | undefined, length: nu
         return isValidCodeOption(raw) ? raw : '-'
     })
 }
+const normalizeFreeTextArray = (values: Array<string | null> | undefined, length: number): Array<string | null> => {
+    return Array.from({ length }, (_, idx) => {
+        const raw = values?.[idx]
+        if (typeof raw !== 'string') return null
+        const normalized = raw.trim()
+        return normalized === '' ? null : normalized
+    })
+}
 
 const EMPTY_SIX_NUMBERS = () => Array.from({ length: 6 }, () => null as number | null)
-const EMPTY_SIX_STRINGS = () => Array.from({ length: 6 }, () => '-' as string | null)
+const EMPTY_SIX_TEXTS = () => Array.from({ length: 6 }, () => null as string | null)
 const EMPTY_THREE_NUMBERS = () => [56, 25, 10].map(v => v as number | null)
 const EMPTY_THREE_STRINGS = () => ['-', '-', '-'].map(v => v as string | null)
-const EMPTY_PENETRACION_ROWS = () => Array.from({ length: 12 }, (): CBRLecturaPenetracionRow => ({
-    tension_standard: undefined,
-    lectura_dial_esp_01: undefined,
-    lectura_dial_esp_02: undefined,
-    lectura_dial_esp_03: undefined,
-}))
+const EMPTY_PENETRACION_ROWS = () => normalizePenetracionRows([])
 const EMPTY_HINCHAMIENTO_ROWS = () => Array.from({ length: 6 }, (): CBRHinchamientoRow => ({
     fecha: '',
     hora: '',
@@ -218,7 +247,7 @@ const buildInitialState = (): CBRPayload => ({
     temperatura_inicio_c_por_columna: EMPTY_SIX_NUMBERS(),
     temperatura_final_c_por_columna: EMPTY_SIX_NUMBERS(),
     masa_molde_suelo_g_por_columna: EMPTY_SIX_NUMBERS(),
-    codigo_tara_por_columna: EMPTY_SIX_STRINGS(),
+    codigo_tara_por_columna: EMPTY_SIX_TEXTS(),
     masa_tara_g_por_columna: EMPTY_SIX_NUMBERS(),
     masa_suelo_humedo_tara_g_por_columna: EMPTY_SIX_NUMBERS(),
     masa_suelo_seco_tara_g_por_columna: EMPTY_SIX_NUMBERS(),
@@ -325,11 +354,21 @@ export default function CBRForm() {
     }, [])
 
     const setPenetracion = useCallback((index: number, field: PenetracionKey, raw: string) => {
-        const numericVal = raw === '' ? undefined : parseFloat(raw)
         setForm(prev => {
             const nextRows = [...prev.lecturas_penetracion]
             const row = { ...nextRows[index] }
-            row[field] = Number.isFinite(numericVal as number) ? (numericVal as number) : undefined
+            if (field === 'tension_standard') {
+                const fixedValue = getFixedTensionStandard(index)
+                if (fixedValue !== undefined) {
+                    row[field] = fixedValue
+                } else {
+                    const numericVal = raw === '' ? undefined : parseFloat(raw)
+                    row[field] = Number.isFinite(numericVal as number) ? (numericVal as number) : undefined
+                }
+            } else {
+                const numericVal = raw === '' ? undefined : parseFloat(raw)
+                row[field] = Number.isFinite(numericVal as number) ? (numericVal as number) : undefined
+            }
             nextRows[index] = row
             return { ...prev, lecturas_penetracion: nextRows }
         })
@@ -431,7 +470,8 @@ export default function CBRForm() {
                     const merged = { ...buildInitialState(), ...detail.payload }
                     merged.golpes_por_especimen = normalizeGolpesArray(merged.golpes_por_especimen)
                     merged.codigo_molde_por_especimen = normalizeCodeArray(merged.codigo_molde_por_especimen, 3)
-                    merged.codigo_tara_por_columna = normalizeCodeArray(merged.codigo_tara_por_columna, 6)
+                    merged.codigo_tara_por_columna = normalizeFreeTextArray(merged.codigo_tara_por_columna, 6)
+                    merged.lecturas_penetracion = normalizePenetracionRows(merged.lecturas_penetracion)
                     setForm(merged)
                 }
             } catch (err: unknown) {
@@ -473,7 +513,10 @@ export default function CBRForm() {
 
         setLoading(true)
         try {
-            const payload: CBRPayload = { ...form }
+            const payload: CBRPayload = {
+                ...form,
+                lecturas_penetracion: normalizePenetracionRows(form.lecturas_penetracion),
+            }
             if (withDownload) {
                 const { blob } = await saveAndDownloadCBRExcel(payload, editingEnsayoId ?? undefined)
                 downloadBlob(blob, payload.numero_ot)
@@ -558,74 +601,75 @@ export default function CBRForm() {
                 </Section>
 
                 <Section title="Condiciones del Ensayo CBR">
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                        <div className="space-y-3">
-                            <NumberInput
-                                label="Sobretamano mayor a 3/4 in (%)"
+                    <div className="space-y-3">
+                        <ConditionRow label="Sobretamano mayor a 3/4 in (%)">
+                            <ConditionNumberInput
                                 value={form.sobretamano_porcentaje}
                                 onChange={v => setNum('sobretamano_porcentaje', v)}
                             />
-                            <NumberInput
-                                label="Masa de grava entre 3/4 in - No.4 adicionada (g)"
+                        </ConditionRow>
+                        <ConditionRow label="Masa de grava entre 3/4 in - No.4 adicionada (g)">
+                            <ConditionNumberInput
                                 value={form.masa_grava_adicionada_g}
                                 onChange={v => setNum('masa_grava_adicionada_g', v)}
                             />
-                            <SelectField
-                                label="Condicion de la muestra - saturado"
+                        </ConditionRow>
+                        <ConditionRow label="Maxima Densidad Seca (g/cm3)">
+                            <ConditionNumberInput
+                                value={form.maxima_densidad_seca}
+                                onChange={v => setNum('maxima_densidad_seca', v)}
+                            />
+                        </ConditionRow>
+                        <ConditionRow label="Optimo Contenido de Humedad (%)">
+                            <ConditionNumberInput
+                                value={form.optimo_contenido_humedad}
+                                onChange={v => setNum('optimo_contenido_humedad', v)}
+                            />
+                        </ConditionRow>
+                        <ConditionRow label="Condicion de la muestra - saturado (Si/No)">
+                            <ConditionSelectInput
                                 value={form.condicion_muestra_saturado}
                                 options={['-', 'SI', 'NO']}
                                 onChange={v => set('condicion_muestra_saturado', v as '-' | 'SI' | 'NO')}
                             />
-                            <SelectField
-                                label="Condicion de la muestra - sin saturar"
+                        </ConditionRow>
+                        <ConditionRow label="Condicion de la muestra - sin saturar (Si/No)">
+                            <ConditionSelectInput
                                 value={form.condicion_muestra_sin_saturar}
                                 options={['-', 'SI', 'NO']}
                                 onChange={v => set('condicion_muestra_sin_saturar', v as '-' | 'SI' | 'NO')}
                             />
-                        </div>
-
-                        <div className="space-y-3">
-                            <NumberInput
-                                label="Maxima Densidad Seca (g/cm3)"
-                                value={form.maxima_densidad_seca}
-                                onChange={v => setNum('maxima_densidad_seca', v)}
-                            />
-                            <NumberInput
-                                label="Optimo Contenido de Humedad (%)"
-                                value={form.optimo_contenido_humedad}
-                                onChange={v => setNum('optimo_contenido_humedad', v)}
-                            />
-                            <NumberInput
-                                label="Temperatura Inicial (C)"
+                        </ConditionRow>
+                        <ConditionRow label="Temperatura Inicial (°C) (18-24°C)">
+                            <ConditionNumberInput
                                 value={form.temperatura_inicial_c}
                                 onChange={v => setNum('temperatura_inicial_c', v)}
                             />
-                            <NumberInput
-                                label="Temperatura Final (C)"
+                        </ConditionRow>
+                        <ConditionRow label="Temperatura Final (°C) (18-24°C)">
+                            <ConditionNumberInput
                                 value={form.temperatura_final_c}
                                 onChange={v => setNum('temperatura_final_c', v)}
                             />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                        <Input
-                            label="Tamano maximo visual (in)"
-                            value={form.tamano_maximo_visual_in || ''}
-                            onChange={v => set('tamano_maximo_visual_in', v)}
-                        />
-                        <Input
-                            label="Descripcion de muestra ASTM D2488"
-                            value={form.descripcion_muestra_astm || ''}
-                            onChange={v => set('descripcion_muestra_astm', v)}
-                        />
+                        </ConditionRow>
+                        <ConditionRow label="Tamano maximo visual (in)">
+                            <ConditionTextInput
+                                value={form.tamano_maximo_visual_in || ''}
+                                onChange={v => set('tamano_maximo_visual_in', v)}
+                            />
+                        </ConditionRow>
+                        <ConditionRow label="Descripcion de muestra ASTM D2488">
+                            <ConditionTextInput
+                                value={form.descripcion_muestra_astm || ''}
+                                onChange={v => set('descripcion_muestra_astm', v)}
+                            />
+                        </ConditionRow>
                     </div>
                 </Section>
 
                 <Section title="Ensayo y Determinacion de Humedad">
-                    <div className="space-y-4">
-                        <div className="overflow-x-auto rounded-md border border-border">
-                            <table className="w-full min-w-[700px] text-sm">
+                    <div className="overflow-x-auto rounded-md border border-border">
+                        <table className="w-full min-w-[1100px] text-sm">
                                 <thead className="bg-muted/40">
                                     <tr>
                                         <th className="px-3 py-2 text-left border-b border-r border-border">Campo</th>
@@ -650,9 +694,9 @@ export default function CBRForm() {
                                         ))}
                                     </tr>
                                     <tr>
-                                        <td className="px-3 py-2 border-r border-border">Codigo de Moldes</td>
+                                        <td className="px-3 py-2 border-r border-b border-border">Codigo de Moldes</td>
                                         {form.codigo_molde_por_especimen.map((value, idx) => (
-                                            <td key={`molde-${idx}`} className="px-2 py-2 border-border">
+                                            <td key={`molde-${idx}`} className="px-2 py-2 border-b border-border">
                                                 <TableSelectInput
                                                     value={value || '-'}
                                                     options={CODE_DROPDOWN_DISPLAY_OPTIONS}
@@ -663,10 +707,7 @@ export default function CBRForm() {
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
-
-                        <div className="overflow-x-auto rounded-md border border-border">
-                            <table className="w-full min-w-[1100px] text-sm">
+                        <table className="w-full min-w-[1100px] text-sm">
                                 <thead className="bg-muted/40">
                                     <tr>
                                         <th className="px-3 py-2 text-left border-b border-r border-border">Campo</th>
@@ -677,12 +718,12 @@ export default function CBRForm() {
                                 </thead>
                                 <tbody>
                                     <ArrayNumberRow
-                                        label="Temperatura de inicio (C)"
+                                        label="Temperatura de inicio (°C) (18-24°C)"
                                         values={form.temperatura_inicio_c_por_columna}
                                         onChange={(idx, raw) => setArrayNum('temperatura_inicio_c_por_columna', idx, raw)}
                                     />
                                     <ArrayNumberRow
-                                        label="Temperatura final (C)"
+                                        label="Temperatura final (°C) (18-24°C)"
                                         values={form.temperatura_final_c_por_columna}
                                         onChange={(idx, raw) => setArrayNum('temperatura_final_c_por_columna', idx, raw)}
                                     />
@@ -691,10 +732,17 @@ export default function CBRForm() {
                                         values={form.masa_molde_suelo_g_por_columna}
                                         onChange={(idx, raw) => setArrayNum('masa_molde_suelo_g_por_columna', idx, raw)}
                                     />
-                                    <ArraySelectRow
+                                    <tr>
+                                        <td
+                                            colSpan={7}
+                                            className="px-3 py-2 border-b border-border bg-muted/30 text-center font-semibold uppercase tracking-wide"
+                                        >
+                                            Determinacion de Humedad
+                                        </td>
+                                    </tr>
+                                    <ArrayTextRow
                                         label="Codigo tara"
                                         values={form.codigo_tara_por_columna}
-                                        options={CODE_DROPDOWN_DISPLAY_OPTIONS}
                                         onChange={(idx, raw) => setArrayText('codigo_tara_por_columna', idx, raw)}
                                     />
                                     <ArrayNumberRow
@@ -727,7 +775,6 @@ export default function CBRForm() {
                                     />
                                 </tbody>
                             </table>
-                        </div>
                     </div>
                 </Section>
 
@@ -752,7 +799,7 @@ export default function CBRForm() {
                                         <td className="px-2 py-2 border-b border-r border-border text-center bg-muted/20">{base.pulg.toFixed(3)}</td>
                                         <td className="px-2 py-2 border-b border-r border-border text-center bg-muted/20">{base.mm.toFixed(2)}</td>
                                         <td className="px-2 py-2 border-b border-r border-border">
-                                            <TableNumInput value={form.lecturas_penetracion[idx]?.tension_standard} onChange={v => setPenetracion(idx, 'tension_standard', v)} />
+                                            <TableFixedValue value={getFixedTensionStandard(idx)} />
                                         </td>
                                         <td className="px-2 py-2 border-b border-r border-border">
                                             <TableNumInput value={form.lecturas_penetracion[idx]?.lectura_dial_esp_01} onChange={v => setPenetracion(idx, 'lectura_dial_esp_01', v)} />
@@ -768,6 +815,13 @@ export default function CBRForm() {
                             </tbody>
                         </table>
                     </div>
+                    <div className="mt-3 max-w-md">
+                        <NumberInput
+                            label="Profundidad de la hendidura (mm)"
+                            value={form.profundidad_hendidura_mm}
+                            onChange={v => setNum('profundidad_hendidura_mm', v)}
+                        />
+                    </div>
                 </Section>
 
                 <Section title="Hinchamiento y Equipos">
@@ -777,11 +831,14 @@ export default function CBRForm() {
                                 <table className="w-full min-w-[650px] text-sm">
                                     <thead className="bg-muted/40">
                                         <tr>
-                                            <th className="px-2 py-2 border-b border-r border-border text-center">Fecha</th>
-                                            <th className="px-2 py-2 border-b border-r border-border text-center">Hora</th>
-                                            <th className="px-2 py-2 border-b border-r border-border text-center">Esp 01</th>
-                                            <th className="px-2 py-2 border-b border-r border-border text-center">Esp 02</th>
-                                            <th className="px-2 py-2 border-b border-border text-center">Esp 03</th>
+                                            <th rowSpan={2} className="px-2 py-2 border-b border-r border-border text-center">Fecha</th>
+                                            <th rowSpan={2} className="px-2 py-2 border-b border-r border-border text-center">Hora</th>
+                                            <th colSpan={3} className="px-2 py-2 border-b border-border text-center">Expansión (mm)</th>
+                                        </tr>
+                                        <tr>
+                                            <th className="px-2 py-2 border-b border-r border-border text-center">Esp. 01</th>
+                                            <th className="px-2 py-2 border-b border-r border-border text-center">Esp. 02</th>
+                                            <th className="px-2 py-2 border-b border-border text-center">Esp. 03</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -816,14 +873,6 @@ export default function CBRForm() {
                                         ))}
                                     </tbody>
                                 </table>
-                            </div>
-
-                            <div className="mt-3">
-                                <NumberInput
-                                    label="Profundidad de la hendidura (mm)"
-                                    value={form.profundidad_hendidura_mm}
-                                    onChange={v => setNum('profundidad_hendidura_mm', v)}
-                                />
                             </div>
                         </div>
 
@@ -1145,6 +1194,75 @@ function EquipmentSelect({ label, value, onChange, options }: {
     return <SelectField label={label} value={value} onChange={onChange} options={options} />
 }
 
+function ConditionRow({
+    label,
+    children,
+}: {
+    label: string
+    children: JSX.Element
+}) {
+    return (
+        <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-3 items-center">
+            <p className="text-sm md:text-[15px] text-muted-foreground font-medium">{label}</p>
+            {children}
+        </div>
+    )
+}
+
+function ConditionNumberInput({ value, onChange }: {
+    value: number | undefined | null
+    onChange: (raw: string) => void
+}) {
+    return (
+        <input
+            type="number"
+            step="any"
+            value={value ?? ''}
+            onChange={e => onChange(e.target.value)}
+            autoComplete="off"
+            data-lpignore="true"
+            className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+    )
+}
+
+function ConditionTextInput({ value, onChange }: {
+    value: string
+    onChange: (raw: string) => void
+}) {
+    return (
+        <input
+            type="text"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            autoComplete="off"
+            data-lpignore="true"
+            className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+    )
+}
+
+function ConditionSelectInput({ value, options, onChange }: {
+    value: string
+    options: string[]
+    onChange: (v: string) => void
+}) {
+    return (
+        <div className="relative">
+            <select
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                className="w-full h-9 pl-3 pr-8 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+                {options.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        </div>
+    )
+}
+
 function TableTextInput({ value, onChange, onBlur, placeholder }: {
     value: string
     onChange: (raw: string) => void
@@ -1213,6 +1331,16 @@ function TableComputedValue({ value }: {
     )
 }
 
+function TableFixedValue({ value }: {
+    value?: number
+}) {
+    return (
+        <div className="h-8 px-2 rounded-md border border-input bg-muted/40 text-sm flex items-center justify-center text-foreground font-semibold">
+            {value ?? '-'}
+        </div>
+    )
+}
+
 function ArrayNumberRow({
     label,
     values,
@@ -1228,6 +1356,27 @@ function ArrayNumberRow({
             {values.map((value, idx) => (
                 <td key={`${label}-${idx}`} className="px-2 py-2 border-b border-border">
                     <TableNumInput value={value} onChange={raw => onChange(idx, raw)} />
+                </td>
+            ))}
+        </tr>
+    )
+}
+
+function ArrayTextRow({
+    label,
+    values,
+    onChange,
+}: {
+    label: string
+    values: Array<string | null>
+    onChange: (idx: number, raw: string) => void
+}) {
+    return (
+        <tr>
+            <td className="px-3 py-2 border-r border-b border-border">{label}</td>
+            {values.map((value, idx) => (
+                <td key={`${label}-${idx}`} className="px-2 py-2 border-b border-border">
+                    <TableTextInput value={value ?? ''} onChange={raw => onChange(idx, raw)} />
                 </td>
             ))}
         </tr>
