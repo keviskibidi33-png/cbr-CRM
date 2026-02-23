@@ -806,7 +806,7 @@ export default function CBRForm() {
                                     onChange={(idx, raw) => setArrayNum('masa_suelo_humedo_tara_g_por_columna', idx, raw)}
                                 />
                                 <tr>
-                                    <td className="px-3 py-1 border-r border-b border-border font-medium">Masa de suelo humedo (g) (*) Formula fila 32</td>
+                                    <td className="px-3 py-1 border-r border-b border-border">Masa de suelo humedo (g) (*)</td>
                                     {masaSueloHumedoPorColumna.map((value, idx) => (
                                         <td
                                             key={`calc-32-${idx}`}
@@ -879,102 +879,100 @@ export default function CBRForm() {
                     </div>
                 </Section>
 
-                <Section title="Hinchamiento y Equipos">
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        <div>
-                            <div className="overflow-x-auto rounded-md border border-border">
-                                <table className="w-full min-w-[650px] text-sm">
-                                    <thead className="bg-muted/40">
-                                        <tr>
-                                            <th rowSpan={2} className="px-2 py-2 border-b border-r border-border text-center">Fecha</th>
-                                            <th rowSpan={2} className="px-2 py-2 border-b border-r border-border text-center">Hora</th>
-                                            <th colSpan={3} className="px-2 py-2 border-b border-border text-center">Expansión (mm)</th>
-                                        </tr>
-                                        <tr>
-                                            <th className="px-2 py-2 border-b border-r border-border text-center">Especimen N°01</th>
-                                            <th className="px-2 py-2 border-b border-r border-border text-center">Especimen N°02</th>
-                                            <th className="px-2 py-2 border-b border-border text-center">Especimen N°03</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {Array.from({ length: 6 }, (_, idx) => (
-                                            <tr key={`hinch-${idx}`}>
-                                                <td className="px-2 py-2 border-b border-r border-border">
-                                                    <TableTextInput
-                                                        value={form.hinchamiento[idx]?.fecha || ''}
-                                                        onChange={v => setHinchamiento(idx, 'fecha', v)}
-                                                        onBlur={() => setHinchamiento(idx, 'fecha', normalizeFlexibleDate(form.hinchamiento[idx]?.fecha || ''))}
-                                                        placeholder="DD/MM/AA"
-                                                    />
-                                                </td>
-                                                <td className="px-2 py-2 border-b border-r border-border">
-                                                    <TableTextInput
-                                                        value={form.hinchamiento[idx]?.hora || ''}
-                                                        onChange={v => setHinchamiento(idx, 'hora', v)}
-                                                        onBlur={() => setHinchamiento(idx, 'hora', normalizeTime(form.hinchamiento[idx]?.hora || ''))}
-                                                        placeholder="00:00:00"
-                                                    />
-                                                </td>
-                                                <td className="px-2 py-2 border-b border-r border-border">
-                                                    <TableNumInput value={form.hinchamiento[idx]?.esp_01} onChange={v => setHinchamiento(idx, 'esp_01', v)} />
-                                                </td>
-                                                <td className="px-2 py-2 border-b border-r border-border">
-                                                    <TableNumInput value={form.hinchamiento[idx]?.esp_02} onChange={v => setHinchamiento(idx, 'esp_02', v)} />
-                                                </td>
-                                                <td className="px-2 py-2 border-b border-border">
-                                                    <TableNumInput value={form.hinchamiento[idx]?.esp_03} onChange={v => setHinchamiento(idx, 'esp_03', v)} />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                <Section title="Hinchamiento">
+                    <div className="overflow-x-auto rounded-md border border-border">
+                        <table className="w-full min-w-[560px] table-fixed text-sm">
+                            <thead className="bg-muted/40">
+                                <tr>
+                                    <th rowSpan={2} className="w-[96px] px-2 py-1.5 border-b border-r border-border text-center">Fecha</th>
+                                    <th rowSpan={2} className="w-[96px] px-2 py-1.5 border-b border-r border-border text-center">Hora</th>
+                                    <th colSpan={3} className="px-2 py-1.5 border-b border-border text-center">Expansión (mm)</th>
+                                </tr>
+                                <tr>
+                                    <th className="w-[112px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°01</th>
+                                    <th className="w-[112px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°02</th>
+                                    <th className="w-[112px] px-2 py-1.5 border-b border-border text-center">Esp. N°03</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Array.from({ length: 6 }, (_, idx) => (
+                                    <tr key={`hinch-${idx}`}>
+                                        <td className="px-2 py-1 border-b border-r border-border">
+                                            <TableTextInputCompact
+                                                value={form.hinchamiento[idx]?.fecha || ''}
+                                                onChange={v => setHinchamiento(idx, 'fecha', v)}
+                                                onBlur={() => setHinchamiento(idx, 'fecha', normalizeFlexibleDate(form.hinchamiento[idx]?.fecha || ''))}
+                                                placeholder="DD/MM/AA"
+                                            />
+                                        </td>
+                                        <td className="px-2 py-1 border-b border-r border-border">
+                                            <TableTextInputCompact
+                                                value={form.hinchamiento[idx]?.hora || ''}
+                                                onChange={v => setHinchamiento(idx, 'hora', v)}
+                                                onBlur={() => setHinchamiento(idx, 'hora', normalizeTime(form.hinchamiento[idx]?.hora || ''))}
+                                                placeholder="00:00:00"
+                                            />
+                                        </td>
+                                        <td className="px-2 py-1 border-b border-r border-border">
+                                            <TableNumInputCompact value={form.hinchamiento[idx]?.esp_01} onChange={v => setHinchamiento(idx, 'esp_01', v)} />
+                                        </td>
+                                        <td className="px-2 py-1 border-b border-r border-border">
+                                            <TableNumInputCompact value={form.hinchamiento[idx]?.esp_02} onChange={v => setHinchamiento(idx, 'esp_02', v)} />
+                                        </td>
+                                        <td className="px-2 py-1 border-b border-border">
+                                            <TableNumInputCompact value={form.hinchamiento[idx]?.esp_03} onChange={v => setHinchamiento(idx, 'esp_03', v)} />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Section>
 
-                        <div className="space-y-3">
-                            <EquipmentSelect
-                                label="Equipo CBR"
-                                value={form.equipo_cbr || '-'}
-                                options={EQUIPO_OPTIONS.equipo_cbr}
-                                onChange={v => set('equipo_cbr', v)}
-                            />
-                            <EquipmentSelect
-                                label="Dial deformacion"
-                                value={form.equipo_dial_deformacion || '-'}
-                                options={EQUIPO_OPTIONS.equipo_dial_deformacion}
-                                onChange={v => set('equipo_dial_deformacion', v)}
-                            />
-                            <EquipmentSelect
-                                label="Dial expansion"
-                                value={form.equipo_dial_expansion || '-'}
-                                options={EQUIPO_OPTIONS.equipo_dial_expansion}
-                                onChange={v => set('equipo_dial_expansion', v)}
-                            />
-                            <EquipmentSelect
-                                label="Horno 110 C"
-                                value={form.equipo_horno_110 || '-'}
-                                options={EQUIPO_OPTIONS.equipo_horno_110}
-                                onChange={v => set('equipo_horno_110', v)}
-                            />
-                            <EquipmentSelect
-                                label="Pison"
-                                value={form.equipo_pison || '-'}
-                                options={EQUIPO_OPTIONS.equipo_pison}
-                                onChange={v => set('equipo_pison', v)}
-                            />
-                            <EquipmentSelect
-                                label="Balanza 1 g"
-                                value={form.equipo_balanza_1g || '-'}
-                                options={EQUIPO_OPTIONS.equipo_balanza_1g}
-                                onChange={v => set('equipo_balanza_1g', v)}
-                            />
-                            <EquipmentSelect
-                                label="Balanza 0.1 g"
-                                value={form.equipo_balanza_01g || '-'}
-                                options={EQUIPO_OPTIONS.equipo_balanza_01g}
-                                onChange={v => set('equipo_balanza_01g', v)}
-                            />
-                        </div>
+                <Section title="Equipos">
+                    <div className="space-y-3">
+                        <EquipmentSelect
+                            label="Equipo CBR"
+                            value={form.equipo_cbr || '-'}
+                            options={EQUIPO_OPTIONS.equipo_cbr}
+                            onChange={v => set('equipo_cbr', v)}
+                        />
+                        <EquipmentSelect
+                            label="Dial deformacion"
+                            value={form.equipo_dial_deformacion || '-'}
+                            options={EQUIPO_OPTIONS.equipo_dial_deformacion}
+                            onChange={v => set('equipo_dial_deformacion', v)}
+                        />
+                        <EquipmentSelect
+                            label="Dial expansion"
+                            value={form.equipo_dial_expansion || '-'}
+                            options={EQUIPO_OPTIONS.equipo_dial_expansion}
+                            onChange={v => set('equipo_dial_expansion', v)}
+                        />
+                        <EquipmentSelect
+                            label="Horno 110 C"
+                            value={form.equipo_horno_110 || '-'}
+                            options={EQUIPO_OPTIONS.equipo_horno_110}
+                            onChange={v => set('equipo_horno_110', v)}
+                        />
+                        <EquipmentSelect
+                            label="Pison"
+                            value={form.equipo_pison || '-'}
+                            options={EQUIPO_OPTIONS.equipo_pison}
+                            onChange={v => set('equipo_pison', v)}
+                        />
+                        <EquipmentSelect
+                            label="Balanza 1 g"
+                            value={form.equipo_balanza_1g || '-'}
+                            options={EQUIPO_OPTIONS.equipo_balanza_1g}
+                            onChange={v => set('equipo_balanza_1g', v)}
+                        />
+                        <EquipmentSelect
+                            label="Balanza 0.1 g"
+                            value={form.equipo_balanza_01g || '-'}
+                            options={EQUIPO_OPTIONS.equipo_balanza_01g}
+                            onChange={v => set('equipo_balanza_01g', v)}
+                        />
                     </div>
                 </Section>
 
