@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, type KeyboardEvent } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { ChevronDown, Download, Loader2, FlaskConical, Gauge } from 'lucide-react'
@@ -235,6 +235,37 @@ const EMPTY_HINCHAMIENTO_ROWS = () => Array.from({ length: 6 }, (): CBRHinchamie
     esp_02: undefined,
     esp_03: undefined,
 }))
+
+const ENTER_NAV_SELECTOR = '[data-enter-nav="true"]:not([disabled])'
+
+const getEnterNavigableFields = (): HTMLElement[] => {
+    if (typeof document === 'undefined') return []
+    return Array.from(document.querySelectorAll<HTMLElement>(ENTER_NAV_SELECTOR)).filter((field) => {
+        if (field.tabIndex < 0) return false
+        return field.getClientRects().length > 0
+    })
+}
+
+const handleAdvanceOnEnter = (event: KeyboardEvent<HTMLElement>): void => {
+    if (event.key !== 'Enter' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return
+
+    const current = event.currentTarget
+    if (current instanceof HTMLTextAreaElement) return
+
+    const fields = getEnterNavigableFields()
+    const currentIndex = fields.indexOf(current)
+    if (currentIndex < 0) return
+
+    const next = fields[currentIndex + 1]
+    if (!next) return
+
+    event.preventDefault()
+    next.focus()
+
+    if (next instanceof HTMLInputElement && next.type !== 'checkbox' && next.type !== 'radio') {
+        next.select()
+    }
+}
 
 const buildInitialState = (): CBRPayload => ({
     muestra: '',
@@ -879,102 +910,106 @@ export default function CBRForm() {
                     </div>
                 </Section>
 
-                <Section title="Hinchamiento">
-                    <div className="rounded-md border border-border bg-background p-3">
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[520px] table-fixed text-sm">
-                                <thead className="bg-muted/40">
-                                    <tr>
-                                        <th rowSpan={2} className="w-[88px] px-2 py-1.5 border-b border-r border-border text-center">Fecha</th>
-                                        <th rowSpan={2} className="w-[88px] px-2 py-1.5 border-b border-r border-border text-center">Hora</th>
-                                        <th colSpan={3} className="px-2 py-1.5 border-b border-border text-center">Expansión (mm)</th>
-                                    </tr>
-                                    <tr>
-                                        <th className="w-[102px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°01</th>
-                                        <th className="w-[102px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°02</th>
-                                        <th className="w-[102px] px-2 py-1.5 border-b border-border text-center">Esp. N°03</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {Array.from({ length: 6 }, (_, idx) => (
-                                        <tr key={`hinch-${idx}`}>
-                                            <td className="px-2 py-1 border-b border-r border-border">
-                                                <TableTextInputCompact
-                                                    value={form.hinchamiento[idx]?.fecha || ''}
-                                                    onChange={v => setHinchamiento(idx, 'fecha', v)}
-                                                    onBlur={() => setHinchamiento(idx, 'fecha', normalizeFlexibleDate(form.hinchamiento[idx]?.fecha || ''))}
-                                                    placeholder="DD/MM/YY"
-                                                />
-                                            </td>
-                                            <td className="px-2 py-1 border-b border-r border-border">
-                                                <TableTextInputCompact
-                                                    value={form.hinchamiento[idx]?.hora || ''}
-                                                    onChange={v => setHinchamiento(idx, 'hora', v)}
-                                                    onBlur={() => setHinchamiento(idx, 'hora', normalizeTime(form.hinchamiento[idx]?.hora || ''))}
-                                                    placeholder="00:00:00"
-                                                />
-                                            </td>
-                                            <td className="px-2 py-1 border-b border-r border-border">
-                                                <TableNumInputCompact value={form.hinchamiento[idx]?.esp_01} onChange={v => setHinchamiento(idx, 'esp_01', v)} />
-                                            </td>
-                                            <td className="px-2 py-1 border-b border-r border-border">
-                                                <TableNumInputCompact value={form.hinchamiento[idx]?.esp_02} onChange={v => setHinchamiento(idx, 'esp_02', v)} />
-                                            </td>
-                                            <td className="px-2 py-1 border-b border-border">
-                                                <TableNumInputCompact value={form.hinchamiento[idx]?.esp_03} onChange={v => setHinchamiento(idx, 'esp_03', v)} />
-                                            </td>
+                <Section title="Hinchamiento / Equipos">
+                    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.95fr)] gap-4">
+                        <div className="rounded-md border border-border bg-background p-3">
+                            <h3 className="text-xs font-semibold text-foreground mb-2">Hinchamiento</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[520px] table-fixed text-sm">
+                                    <thead className="bg-muted/40">
+                                        <tr>
+                                            <th rowSpan={2} className="w-[88px] px-2 py-1.5 border-b border-r border-border text-center">Fecha</th>
+                                            <th rowSpan={2} className="w-[88px] px-2 py-1.5 border-b border-r border-border text-center">Hora</th>
+                                            <th colSpan={3} className="px-2 py-1.5 border-b border-border text-center">Expansión (mm)</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                        <tr>
+                                            <th className="w-[102px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°01</th>
+                                            <th className="w-[102px] px-2 py-1.5 border-b border-r border-border text-center">Esp. N°02</th>
+                                            <th className="w-[102px] px-2 py-1.5 border-b border-border text-center">Esp. N°03</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {Array.from({ length: 6 }, (_, idx) => (
+                                            <tr key={`hinch-${idx}`}>
+                                                <td className="px-2 py-1 border-b border-r border-border">
+                                                    <TableTextInputCompact
+                                                        value={form.hinchamiento[idx]?.fecha || ''}
+                                                        onChange={v => setHinchamiento(idx, 'fecha', v)}
+                                                        onBlur={() => setHinchamiento(idx, 'fecha', normalizeFlexibleDate(form.hinchamiento[idx]?.fecha || ''))}
+                                                        placeholder="DD/MM/YY"
+                                                    />
+                                                </td>
+                                                <td className="px-2 py-1 border-b border-r border-border">
+                                                    <TableTextInputCompact
+                                                        value={form.hinchamiento[idx]?.hora || ''}
+                                                        onChange={v => setHinchamiento(idx, 'hora', v)}
+                                                        onBlur={() => setHinchamiento(idx, 'hora', normalizeTime(form.hinchamiento[idx]?.hora || ''))}
+                                                        placeholder="00:00:00"
+                                                    />
+                                                </td>
+                                                <td className="px-2 py-1 border-b border-r border-border">
+                                                    <TableNumInputCompact value={form.hinchamiento[idx]?.esp_01} onChange={v => setHinchamiento(idx, 'esp_01', v)} />
+                                                </td>
+                                                <td className="px-2 py-1 border-b border-r border-border">
+                                                    <TableNumInputCompact value={form.hinchamiento[idx]?.esp_02} onChange={v => setHinchamiento(idx, 'esp_02', v)} />
+                                                </td>
+                                                <td className="px-2 py-1 border-b border-border">
+                                                    <TableNumInputCompact value={form.hinchamiento[idx]?.esp_03} onChange={v => setHinchamiento(idx, 'esp_03', v)} />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                </Section>
 
-                <Section title="Equipos">
-                    <div className="rounded-md border border-border bg-background p-3 space-y-3">
-                        <EquipmentSelect
-                            label="Equipo CBR"
-                            value={form.equipo_cbr || '-'}
-                            options={EQUIPO_OPTIONS.equipo_cbr}
-                            onChange={v => set('equipo_cbr', v)}
-                        />
-                        <EquipmentSelect
-                            label="Dial deformacion"
-                            value={form.equipo_dial_deformacion || '-'}
-                            options={EQUIPO_OPTIONS.equipo_dial_deformacion}
-                            onChange={v => set('equipo_dial_deformacion', v)}
-                        />
-                        <EquipmentSelect
-                            label="Dial expansion"
-                            value={form.equipo_dial_expansion || '-'}
-                            options={EQUIPO_OPTIONS.equipo_dial_expansion}
-                            onChange={v => set('equipo_dial_expansion', v)}
-                        />
-                        <EquipmentSelect
-                            label="Horno 110 C"
-                            value={form.equipo_horno_110 || '-'}
-                            options={EQUIPO_OPTIONS.equipo_horno_110}
-                            onChange={v => set('equipo_horno_110', v)}
-                        />
-                        <EquipmentSelect
-                            label="Pison"
-                            value={form.equipo_pison || '-'}
-                            options={EQUIPO_OPTIONS.equipo_pison}
-                            onChange={v => set('equipo_pison', v)}
-                        />
-                        <EquipmentSelect
-                            label="Balanza 1 g"
-                            value={form.equipo_balanza_1g || '-'}
-                            options={EQUIPO_OPTIONS.equipo_balanza_1g}
-                            onChange={v => set('equipo_balanza_1g', v)}
-                        />
-                        <EquipmentSelect
-                            label="Balanza 0.1 g"
-                            value={form.equipo_balanza_01g || '-'}
-                            options={EQUIPO_OPTIONS.equipo_balanza_01g}
-                            onChange={v => set('equipo_balanza_01g', v)}
-                        />
+                        <div className="rounded-md border border-border bg-background p-3">
+                            <h3 className="text-xs font-semibold text-foreground mb-2">Equipos</h3>
+                            <div className="space-y-2">
+                                <EquipmentSelect
+                                    label="Equipo CBR"
+                                    value={form.equipo_cbr || '-'}
+                                    options={EQUIPO_OPTIONS.equipo_cbr}
+                                    onChange={v => set('equipo_cbr', v)}
+                                />
+                                <EquipmentSelect
+                                    label="Dial deformacion"
+                                    value={form.equipo_dial_deformacion || '-'}
+                                    options={EQUIPO_OPTIONS.equipo_dial_deformacion}
+                                    onChange={v => set('equipo_dial_deformacion', v)}
+                                />
+                                <EquipmentSelect
+                                    label="Dial expansion"
+                                    value={form.equipo_dial_expansion || '-'}
+                                    options={EQUIPO_OPTIONS.equipo_dial_expansion}
+                                    onChange={v => set('equipo_dial_expansion', v)}
+                                />
+                                <EquipmentSelect
+                                    label="Horno 110 C"
+                                    value={form.equipo_horno_110 || '-'}
+                                    options={EQUIPO_OPTIONS.equipo_horno_110}
+                                    onChange={v => set('equipo_horno_110', v)}
+                                />
+                                <EquipmentSelect
+                                    label="Pison"
+                                    value={form.equipo_pison || '-'}
+                                    options={EQUIPO_OPTIONS.equipo_pison}
+                                    onChange={v => set('equipo_pison', v)}
+                                />
+                                <EquipmentSelect
+                                    label="Balanza 1 g"
+                                    value={form.equipo_balanza_1g || '-'}
+                                    options={EQUIPO_OPTIONS.equipo_balanza_1g}
+                                    onChange={v => set('equipo_balanza_1g', v)}
+                                />
+                                <EquipmentSelect
+                                    label="Balanza 0.1 g"
+                                    value={form.equipo_balanza_01g || '-'}
+                                    options={EQUIPO_OPTIONS.equipo_balanza_01g}
+                                    onChange={v => set('equipo_balanza_01g', v)}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </Section>
 
@@ -1185,9 +1220,11 @@ function Input({ label, value, onChange, placeholder, onBlur }: {
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 onBlur={onBlur}
+                onKeyDown={handleAdvanceOnEnter}
                 placeholder={placeholder}
                 autoComplete="off"
                 data-lpignore="true"
+                data-enter-nav="true"
                 className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
         </div>
@@ -1207,8 +1244,10 @@ function NumberInput({ label, value, onChange }: {
                 step="any"
                 value={value ?? ''}
                 onChange={e => onChange(e.target.value)}
+                onKeyDown={handleAdvanceOnEnter}
                 autoComplete="off"
                 data-lpignore="true"
+                data-enter-nav="true"
                 className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
         </div>
@@ -1228,6 +1267,8 @@ function SelectField({ label, value, onChange, options }: {
                 <select
                     value={value}
                     onChange={e => onChange(e.target.value)}
+                    onKeyDown={handleAdvanceOnEnter}
+                    data-enter-nav="true"
                     className="w-full h-9 pl-3 pr-8 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                     {options.map(option => (
@@ -1246,7 +1287,25 @@ function EquipmentSelect({ label, value, onChange, options }: {
     onChange: (v: string) => void
     options: string[]
 }) {
-    return <SelectField label={label} value={value} onChange={onChange} options={options} />
+    return (
+        <div className="grid grid-cols-[114px_minmax(0,1fr)] gap-2 items-center">
+            <p className="text-xs text-muted-foreground font-medium leading-none">{label}</p>
+            <div className="relative">
+                <select
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    onKeyDown={handleAdvanceOnEnter}
+                    data-enter-nav="true"
+                    className="w-full h-8 pl-2.5 pr-8 rounded-md border border-input bg-background text-xs appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                    {options.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                    ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            </div>
+        </div>
+    )
 }
 
 function ConditionRow({
@@ -1274,8 +1333,10 @@ function ConditionNumberInput({ value, onChange }: {
             step="any"
             value={value ?? ''}
             onChange={e => onChange(e.target.value)}
+            onKeyDown={handleAdvanceOnEnter}
             autoComplete="off"
             data-lpignore="true"
+            data-enter-nav="true"
             className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
     )
@@ -1290,8 +1351,10 @@ function ConditionTextInput({ value, onChange }: {
             type="text"
             value={value}
             onChange={e => onChange(e.target.value)}
+            onKeyDown={handleAdvanceOnEnter}
             autoComplete="off"
             data-lpignore="true"
+            data-enter-nav="true"
             className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
     )
@@ -1307,6 +1370,8 @@ function ConditionSelectInput({ value, options, onChange }: {
             <select
                 value={value}
                 onChange={e => onChange(e.target.value)}
+                onKeyDown={handleAdvanceOnEnter}
+                data-enter-nav="true"
                 className="w-full h-9 pl-3 pr-8 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
             >
                 {options.map(option => (
@@ -1330,9 +1395,11 @@ function TableTextInput({ value, onChange, onBlur, placeholder }: {
             value={value}
             onChange={e => onChange(e.target.value)}
             onBlur={onBlur}
+            onKeyDown={handleAdvanceOnEnter}
             placeholder={placeholder}
             autoComplete="off"
             data-lpignore="true"
+            data-enter-nav="true"
             className="w-full h-8 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
     )
@@ -1350,9 +1417,11 @@ function TableTextInputCompact({ value, onChange, onBlur, placeholder }: {
             value={value}
             onChange={e => onChange(e.target.value)}
             onBlur={onBlur}
+            onKeyDown={handleAdvanceOnEnter}
             placeholder={placeholder}
             autoComplete="off"
             data-lpignore="true"
+            data-enter-nav="true"
             className="w-full h-7 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
     )
@@ -1368,6 +1437,8 @@ function TableSelectInput({ value, options, onChange }: {
             <select
                 value={value}
                 onChange={e => onChange(e.target.value)}
+                onKeyDown={handleAdvanceOnEnter}
+                data-enter-nav="true"
                 className="w-full h-8 pl-2 pr-7 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
             >
                 {options.map(option => (
@@ -1389,6 +1460,8 @@ function TableSelectInputCompact({ value, options, onChange }: {
             <select
                 value={value}
                 onChange={e => onChange(e.target.value)}
+                onKeyDown={handleAdvanceOnEnter}
+                data-enter-nav="true"
                 className="w-full h-7 pl-2 pr-7 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
             >
                 {options.map(option => (
@@ -1410,8 +1483,10 @@ function TableNumInput({ value, onChange }: {
             step="any"
             value={value ?? ''}
             onChange={e => onChange(e.target.value)}
+            onKeyDown={handleAdvanceOnEnter}
             autoComplete="off"
             data-lpignore="true"
+            data-enter-nav="true"
             className="w-full h-8 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
     )
@@ -1427,8 +1502,10 @@ function TableNumInputCompact({ value, onChange }: {
             step="any"
             value={value ?? ''}
             onChange={e => onChange(e.target.value)}
+            onKeyDown={handleAdvanceOnEnter}
             autoComplete="off"
             data-lpignore="true"
+            data-enter-nav="true"
             className="w-full h-7 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
     )
