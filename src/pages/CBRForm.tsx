@@ -357,6 +357,8 @@ const REVISADO_POR_OPTIONS = ['-', 'FABIAN LA ROSA']
 const APROBADO_POR_OPTIONS = ['-', 'IRMA COAQUIRA']
 const CBR_DRAFT_STORAGE_PREFIX = 'cbr_form_draft_v1'
 const DRAFT_DEBOUNCE_MS = 700
+const STICKY_LABEL_TH_CLASS = "sticky left-0 z-20 bg-muted/40"
+const STICKY_LABEL_TD_CLASS = "sticky left-0 z-10 bg-background"
 
 const getDraftStorageKey = (ensayoId: number | null): string => {
     return `${CBR_DRAFT_STORAGE_PREFIX}:${ensayoId ?? 'new'}`
@@ -806,7 +808,9 @@ export default function CBRForm() {
                         <table className="w-full min-w-[1100px] text-sm">
                             <thead className="bg-muted/40">
                                 <tr>
-                                    <th className="px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase">Ensayo</th>
+                                    <th className={`min-w-[240px] px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase ${STICKY_LABEL_TH_CLASS} z-30`}>
+                                        Ensayo
+                                    </th>
                                     {THREE_SPECIMEN_LABELS.map((label) => (
                                         <th key={`${label}-group`} colSpan={2} className="px-2 py-1.5 text-center border-b border-r border-border">
                                             {label}
@@ -814,7 +818,9 @@ export default function CBRForm() {
                                     ))}
                                 </tr>
                                 <tr>
-                                    <th className="px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase">Condicion</th>
+                                    <th className={`min-w-[240px] px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase ${STICKY_LABEL_TH_CLASS}`}>
+                                        Condicion
+                                    </th>
                                     {THREE_SPECIMEN_LABELS.flatMap((label) => [
                                         <th key={`${label}-sin-saturar`} className="px-2 py-1.5 text-center border-b border-r border-border">
                                             Sin Saturar
@@ -827,7 +833,7 @@ export default function CBRForm() {
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td className="px-3 py-1 border-r border-b border-border">N Golpes (56-25-10)</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>N Golpes (56-25-10)</td>
                                     {form.golpes_por_especimen.map((value, idx) => (
                                         <td key={`golpes-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
                                             <TableSelectInputCompact
@@ -839,7 +845,7 @@ export default function CBRForm() {
                                     ))}
                                 </tr>
                                 <tr>
-                                    <td className="px-3 py-1 border-r border-b border-border">Codigo de Moldes</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>Codigo de Moldes</td>
                                     {form.codigo_molde_por_especimen.map((value, idx) => (
                                         <td key={`molde-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
                                             <TableSelectInputCompact
@@ -851,7 +857,7 @@ export default function CBRForm() {
                                     ))}
                                 </tr>
                                 <tr>
-                                    <td className="px-3 py-1 border-r border-b border-border">Temperatura de inicio (°C) (18-24°C)</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>Temperatura de inicio (°C) (18-24°C)</td>
                                     {temperaturaInicioPorEspecimen.map((value, idx) => (
                                         <td key={`temp-inicio-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
                                             <TableNumInputCompact
@@ -862,7 +868,7 @@ export default function CBRForm() {
                                     ))}
                                 </tr>
                                 <tr>
-                                    <td className="px-3 py-1 border-r border-b border-border">Temperatura final (°C) (18-24°C)</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>Temperatura final (°C) (18-24°C)</td>
                                     {temperaturaFinalPorEspecimen.map((value, idx) => (
                                         <td key={`temp-final-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
                                             <TableNumInputCompact
@@ -876,6 +882,7 @@ export default function CBRForm() {
                                     label="Masa de molde + suelo moldeado (g)"
                                     values={form.masa_molde_suelo_g_por_columna}
                                     compact
+                                    stickyLabel
                                     onChange={(idx, raw) => setArrayNum('masa_molde_suelo_g_por_columna', idx, raw)}
                                 />
                                 <tr>
@@ -890,22 +897,25 @@ export default function CBRForm() {
                                     label="Codigo tara"
                                     values={form.codigo_tara_por_columna}
                                     compact
+                                    stickyLabel
                                     onChange={(idx, raw) => setArrayText('codigo_tara_por_columna', idx, raw)}
                                 />
                                 <ArrayNumberRow
                                     label="Masa de tara (g)"
                                     values={form.masa_tara_g_por_columna}
                                     compact
+                                    stickyLabel
                                     onChange={(idx, raw) => setArrayNum('masa_tara_g_por_columna', idx, raw)}
                                 />
                                 <ArrayNumberRow
                                     label="Masa de suelo humedo + tara (g)"
                                     values={form.masa_suelo_humedo_tara_g_por_columna}
                                     compact
+                                    stickyLabel
                                     onChange={(idx, raw) => setArrayNum('masa_suelo_humedo_tara_g_por_columna', idx, raw)}
                                 />
                                 <tr>
-                                    <td className="px-3 py-1 border-r border-b border-border">Masa de suelo humedo (g) (*)</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>Masa de suelo humedo (g) (*)</td>
                                     {masaSueloHumedoPorColumna.map((value, idx) => (
                                         <td
                                             key={`calc-32-${idx}`}
@@ -919,12 +929,14 @@ export default function CBRForm() {
                                     label="Masa de suelo seco + tara (g)"
                                     values={form.masa_suelo_seco_tara_g_por_columna}
                                     compact
+                                    stickyLabel
                                     onChange={(idx, raw) => setArrayNum('masa_suelo_seco_tara_g_por_columna', idx, raw)}
                                 />
                                 <ArrayNumberRow
                                     label="Masa de suelo seco + tara (g) constante"
                                     values={form.masa_suelo_seco_tara_constante_g_por_columna}
                                     compact
+                                    stickyLabel
                                     onChange={(idx, raw) => setArrayNum('masa_suelo_seco_tara_constante_g_por_columna', idx, raw)}
                                 />
                             </tbody>
@@ -1623,16 +1635,19 @@ function ArrayNumberRow({
     label,
     values,
     compact = false,
+    stickyLabel = false,
     onChange,
 }: {
     label: string
     values: Array<number | null>
     compact?: boolean
+    stickyLabel?: boolean
     onChange: (idx: number, raw: string) => void
 }) {
+    const labelClass = compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"
     return (
         <tr>
-            <td className={compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"}>{label}</td>
+            <td className={`${labelClass} ${stickyLabel ? STICKY_LABEL_TD_CLASS : ""}`}>{label}</td>
             {values.map((value, idx) => (
                 <td
                     key={`${label}-${idx}`}
@@ -1653,16 +1668,19 @@ function ArrayTextRow({
     label,
     values,
     compact = false,
+    stickyLabel = false,
     onChange,
 }: {
     label: string
     values: Array<string | null>
     compact?: boolean
+    stickyLabel?: boolean
     onChange: (idx: number, raw: string) => void
 }) {
+    const labelClass = compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"
     return (
         <tr>
-            <td className={compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"}>{label}</td>
+            <td className={`${labelClass} ${stickyLabel ? STICKY_LABEL_TD_CLASS : ""}`}>{label}</td>
             {values.map((value, idx) => (
                 <td
                     key={`${label}-${idx}`}
