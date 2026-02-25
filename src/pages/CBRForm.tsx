@@ -355,6 +355,52 @@ const EQUIPO_OPTIONS: Record<EquipoKey, string[]> = {
 }
 const REVISADO_POR_OPTIONS = ['-', 'FABIAN LA ROSA']
 const APROBADO_POR_OPTIONS = ['-', 'IRMA COAQUIRA']
+const CBR_DRAFT_STORAGE_PREFIX = 'cbr_form_draft_v1'
+const DRAFT_DEBOUNCE_MS = 700
+
+const getDraftStorageKey = (ensayoId: number | null): string => {
+    return `${CBR_DRAFT_STORAGE_PREFIX}:${ensayoId ?? 'new'}`
+}
+
+const normalizeNullableNumberArray = (
+    values: Array<number | null> | undefined,
+    length: number,
+): Array<number | null> => {
+    return Array.from({ length }, (_, idx) => {
+        const normalized = toFiniteNumber(values?.[idx])
+        return normalized ?? null
+    })
+}
+
+const normalizeHinchamientoRows = (rows: CBRHinchamientoRow[] | undefined): CBRHinchamientoRow[] => {
+    return Array.from({ length: 6 }, (_, idx): CBRHinchamientoRow => {
+        const source = rows?.[idx]
+        return {
+            fecha: typeof source?.fecha === 'string' ? source.fecha : '',
+            hora: typeof source?.hora === 'string' ? source.hora : '',
+            esp_01: toFiniteNumber(source?.esp_01),
+            esp_02: toFiniteNumber(source?.esp_02),
+            esp_03: toFiniteNumber(source?.esp_03),
+        }
+    })
+}
+
+const hydrateCBRFormSnapshot = (payload?: Partial<CBRPayload> | null): CBRPayload => {
+    const merged: CBRPayload = { ...buildInitialState(), ...(payload ?? {}) }
+    merged.golpes_por_especimen = normalizeGolpesArray(merged.golpes_por_especimen)
+    merged.codigo_molde_por_especimen = normalizeCodeArray(merged.codigo_molde_por_especimen, 3)
+    merged.codigo_tara_por_columna = normalizeFreeTextArray(merged.codigo_tara_por_columna, 6)
+    merged.temperatura_inicio_c_por_columna = normalizeNullableNumberArray(merged.temperatura_inicio_c_por_columna, 6)
+    merged.temperatura_final_c_por_columna = normalizeNullableNumberArray(merged.temperatura_final_c_por_columna, 6)
+    merged.masa_molde_suelo_g_por_columna = normalizeNullableNumberArray(merged.masa_molde_suelo_g_por_columna, 6)
+    merged.masa_tara_g_por_columna = normalizeNullableNumberArray(merged.masa_tara_g_por_columna, 6)
+    merged.masa_suelo_humedo_tara_g_por_columna = normalizeNullableNumberArray(merged.masa_suelo_humedo_tara_g_por_columna, 6)
+    merged.masa_suelo_seco_tara_g_por_columna = normalizeNullableNumberArray(merged.masa_suelo_seco_tara_g_por_columna, 6)
+    merged.masa_suelo_seco_tara_constante_g_por_columna = normalizeNullableNumberArray(merged.masa_suelo_seco_tara_constante_g_por_columna, 6)
+    merged.lecturas_penetracion = normalizePenetracionRows(merged.lecturas_penetracion)
+    merged.hinchamiento = normalizeHinchamientoRows(merged.hinchamiento)
+    return merged
+}
 
 const getEnsayoIdFromQuery = (): number | null => {
     const raw = new URLSearchParams(window.location.search).get('ensayo_id')
@@ -368,6 +414,7 @@ export default function CBRForm() {
     const [loading, setLoading] = useState(false)
     const [editingEnsayoId, setEditingEnsayoId] = useState<number | null>(() => getEnsayoIdFromQuery())
     const [loadingEnsayo, setLoadingEnsayo] = useState(false)
+    const draftStorageKey = useMemo(() => getDraftStorageKey(editingEnsayoId), [editingEnsayoId])
 
     const set = useCallback(<K extends keyof CBRPayload>(key: K, value: CBRPayload[K]) => {
         setForm(prev => ({ ...prev, [key]: value }))
@@ -531,12 +578,7 @@ export default function CBRForm() {
                     return
                 }
                 if (!cancelled) {
-                    const merged = { ...buildInitialState(), ...detail.payload }
-                    merged.golpes_por_especimen = normalizeGolpesArray(merged.golpes_por_especimen)
-                    merged.codigo_molde_por_especimen = normalizeCodeArray(merged.codigo_molde_por_especimen, 3)
-                    merged.codigo_tara_por_columna = normalizeFreeTextArray(merged.codigo_tara_por_columna, 6)
-                    merged.lecturas_penetracion = normalizePenetracionRows(merged.lecturas_penetracion)
-                    setForm(merged)
+                    setForm(hydrateCBRFormSnapshot(detail.payload))
                 }
             } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -553,6 +595,31 @@ export default function CBRForm() {
             cancelled = true
         }
     }, [editingEnsayoId])
+
+    useEffect(() => {
+        if (editingEnsayoId || loadingEnsayo) return
+
+        const raw = localStorage.getItem(draftStorageKey)
+        if (!raw) return
+
+        try {
+            const parsed = JSON.parse(raw) as Partial<CBRPayload>
+            setForm(hydrateCBRFormSnapshot(parsed))
+            toast.success('Se restauró un borrador local de CBR.', { duration: 2500 })
+        } catch {
+            localStorage.removeItem(draftStorageKey)
+        }
+    }, [draftStorageKey, editingEnsayoId, loadingEnsayo])
+
+    useEffect(() => {
+        if (editingEnsayoId || loadingEnsayo) return
+
+        const timeoutId = window.setTimeout(() => {
+            localStorage.setItem(draftStorageKey, JSON.stringify(form))
+        }, DRAFT_DEBOUNCE_MS)
+
+        return () => window.clearTimeout(timeoutId)
+    }, [draftStorageKey, editingEnsayoId, form, loadingEnsayo])
 
     const downloadBlob = useCallback((blob: Blob, numeroOt: string) => {
         const url = URL.createObjectURL(blob)
@@ -592,6 +659,7 @@ export default function CBRForm() {
                 toast.success(editingEnsayoId ? 'Formato CBR actualizado correctamente.' : 'Formato CBR guardado correctamente.')
             }
 
+            localStorage.removeItem(draftStorageKey)
             setForm(buildInitialState())
             setEditingEnsayoId(null)
             closeParentModalIfEmbedded()
@@ -607,7 +675,7 @@ export default function CBRForm() {
         } finally {
             setLoading(false)
         }
-    }, [closeParentModalIfEmbedded, downloadBlob, editingEnsayoId, form])
+    }, [closeParentModalIfEmbedded, downloadBlob, draftStorageKey, editingEnsayoId, form])
 
     return (
         <div className="max-w-7xl mx-auto p-4 md:p-6">
