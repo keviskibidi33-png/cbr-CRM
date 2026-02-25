@@ -154,6 +154,7 @@ export interface CBRPayload {
 
     lecturas_penetracion: CBRLecturaPenetracionRow[]
     hinchamiento: CBRHinchamientoRow[]
+    profundidad_hendidura_mm_por_celda: Array<number | null>
     profundidad_hendidura_mm?: number
 
     equipo_cbr?: string

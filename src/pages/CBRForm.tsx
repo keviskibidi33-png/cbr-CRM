@@ -228,13 +228,16 @@ const EMPTY_SIX_TEXTS = () => Array.from({ length: 6 }, () => null as string | n
 const EMPTY_THREE_NUMBERS = () => [56, 25, 10].map(v => v as number | null)
 const EMPTY_THREE_STRINGS = () => ['-', '-', '-'].map(v => v as string | null)
 const EMPTY_PENETRACION_ROWS = () => normalizePenetracionRows([])
-const EMPTY_HINCHAMIENTO_ROWS = () => Array.from({ length: 6 }, (): CBRHinchamientoRow => ({
+const HINCHAMIENTO_ROWS = 5
+const HENDIDURA_CELLS = 3
+const EMPTY_HINCHAMIENTO_ROWS = () => Array.from({ length: HINCHAMIENTO_ROWS }, (): CBRHinchamientoRow => ({
     fecha: '',
     hora: '',
     esp_01: undefined,
     esp_02: undefined,
     esp_03: undefined,
 }))
+const EMPTY_HENDIDURA_CELLS = () => Array.from({ length: HENDIDURA_CELLS }, () => null as number | null)
 
 const ENTER_NAV_SELECTOR = '[data-enter-nav="true"]:not([disabled])'
 
@@ -297,6 +300,7 @@ const buildInitialState = (): CBRPayload => ({
 
     lecturas_penetracion: EMPTY_PENETRACION_ROWS(),
     hinchamiento: EMPTY_HINCHAMIENTO_ROWS(),
+    profundidad_hendidura_mm_por_celda: EMPTY_HENDIDURA_CELLS(),
     profundidad_hendidura_mm: undefined,
 
     equipo_cbr: '-',
@@ -323,6 +327,7 @@ type NumericArrayKey =
     | 'masa_suelo_humedo_tara_g_por_columna'
     | 'masa_suelo_seco_tara_g_por_columna'
     | 'masa_suelo_seco_tara_constante_g_por_columna'
+    | 'profundidad_hendidura_mm_por_celda'
 
 type StringArrayKey = 'codigo_molde_por_especimen' | 'codigo_tara_por_columna'
 type TemperaturaSixKey = 'temperatura_inicio_c_por_columna' | 'temperatura_final_c_por_columna'
@@ -357,8 +362,9 @@ const REVISADO_POR_OPTIONS = ['-', 'FABIAN LA ROSA']
 const APROBADO_POR_OPTIONS = ['-', 'IRMA COAQUIRA']
 const CBR_DRAFT_STORAGE_PREFIX = 'cbr_form_draft_v1'
 const DRAFT_DEBOUNCE_MS = 700
-const STICKY_LABEL_TH_CLASS = "sticky left-0 z-20 bg-muted/40"
-const STICKY_LABEL_TD_CLASS = "sticky left-0 z-10 bg-background"
+const STICKY_LABEL_WIDTH_CLASS = "w-[320px] min-w-[320px] max-w-[320px]"
+const STICKY_LABEL_TH_CLASS = "sticky left-0 z-50 bg-muted relative shadow-[8px_0_12px_-10px_rgba(15,23,42,0.45)] after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-border"
+const STICKY_LABEL_TD_CLASS = "sticky left-0 z-40 bg-background relative shadow-[8px_0_12px_-10px_rgba(15,23,42,0.35)] after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-border"
 
 const getDraftStorageKey = (ensayoId: number | null): string => {
     return `${CBR_DRAFT_STORAGE_PREFIX}:${ensayoId ?? 'new'}`
@@ -375,7 +381,7 @@ const normalizeNullableNumberArray = (
 }
 
 const normalizeHinchamientoRows = (rows: CBRHinchamientoRow[] | undefined): CBRHinchamientoRow[] => {
-    return Array.from({ length: 6 }, (_, idx): CBRHinchamientoRow => {
+    return Array.from({ length: HINCHAMIENTO_ROWS }, (_, idx): CBRHinchamientoRow => {
         const source = rows?.[idx]
         return {
             fecha: typeof source?.fecha === 'string' ? source.fecha : '',
@@ -401,6 +407,17 @@ const hydrateCBRFormSnapshot = (payload?: Partial<CBRPayload> | null): CBRPayloa
     merged.masa_suelo_seco_tara_constante_g_por_columna = normalizeNullableNumberArray(merged.masa_suelo_seco_tara_constante_g_por_columna, 6)
     merged.lecturas_penetracion = normalizePenetracionRows(merged.lecturas_penetracion)
     merged.hinchamiento = normalizeHinchamientoRows(merged.hinchamiento)
+    merged.profundidad_hendidura_mm_por_celda = normalizeNullableNumberArray(
+        merged.profundidad_hendidura_mm_por_celda,
+        HENDIDURA_CELLS,
+    )
+    if (
+        merged.profundidad_hendidura_mm != null
+        && merged.profundidad_hendidura_mm_por_celda.every(value => value == null)
+    ) {
+        merged.profundidad_hendidura_mm_por_celda[0] = merged.profundidad_hendidura_mm
+    }
+    merged.profundidad_hendidura_mm = merged.profundidad_hendidura_mm_por_celda[0] ?? undefined
     return merged
 }
 
@@ -646,11 +663,18 @@ export default function CBRForm() {
 
         setLoading(true)
         try {
+            const profundidadHendiduraPorCelda = normalizeNullableNumberArray(
+                form.profundidad_hendidura_mm_por_celda,
+                HENDIDURA_CELLS,
+            )
             const payload: CBRPayload = {
                 ...form,
                 temperatura_inicio_c_por_columna: expandThreeToSix(temperaturaInicioPorEspecimen),
                 temperatura_final_c_por_columna: expandThreeToSix(temperaturaFinalPorEspecimen),
                 lecturas_penetracion: normalizePenetracionRows(form.lecturas_penetracion),
+                hinchamiento: normalizeHinchamientoRows(form.hinchamiento),
+                profundidad_hendidura_mm_por_celda: profundidadHendiduraPorCelda,
+                profundidad_hendidura_mm: profundidadHendiduraPorCelda[0] ?? undefined,
             }
             if (withDownload) {
                 const { blob } = await saveAndDownloadCBRExcel(payload, editingEnsayoId ?? undefined)
@@ -804,11 +828,11 @@ export default function CBRForm() {
                 </Section>
 
                 <Section title="Ensayo y Determinacion de Humedad">
-                    <div className="overflow-x-auto rounded-md border border-border">
-                        <table className="w-full min-w-[1100px] text-sm">
+                    <div className="overflow-x-auto rounded-md border border-border relative">
+                        <table className="w-full min-w-[1200px] table-fixed text-sm">
                             <thead className="bg-muted/40">
                                 <tr>
-                                    <th className={`min-w-[240px] px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase ${STICKY_LABEL_TH_CLASS} z-30`}>
+                                    <th className={`${STICKY_LABEL_WIDTH_CLASS} px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase ${STICKY_LABEL_TH_CLASS}`}>
                                         Ensayo
                                     </th>
                                     {THREE_SPECIMEN_LABELS.map((label) => (
@@ -818,7 +842,7 @@ export default function CBRForm() {
                                     ))}
                                 </tr>
                                 <tr>
-                                    <th className={`min-w-[240px] px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase ${STICKY_LABEL_TH_CLASS}`}>
+                                    <th className={`${STICKY_LABEL_WIDTH_CLASS} px-3 py-1.5 text-center border-b border-r border-border font-semibold uppercase ${STICKY_LABEL_TH_CLASS}`}>
                                         Condicion
                                     </th>
                                     {THREE_SPECIMEN_LABELS.flatMap((label) => [
@@ -833,7 +857,7 @@ export default function CBRForm() {
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>N Golpes (56-25-10)</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS} ${STICKY_LABEL_TD_CLASS}`}>N Golpes (56-25-10)</td>
                                     {form.golpes_por_especimen.map((value, idx) => (
                                         <td key={`golpes-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
                                             <TableSelectInputCompact
@@ -845,7 +869,7 @@ export default function CBRForm() {
                                     ))}
                                 </tr>
                                 <tr>
-                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>Codigo de Moldes</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS} ${STICKY_LABEL_TD_CLASS}`}>Codigo de Moldes</td>
                                     {form.codigo_molde_por_especimen.map((value, idx) => (
                                         <td key={`molde-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
                                             <TableSelectInputCompact
@@ -857,7 +881,7 @@ export default function CBRForm() {
                                     ))}
                                 </tr>
                                 <tr>
-                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>Temperatura de inicio (°C) (18-24°C)</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS} ${STICKY_LABEL_TD_CLASS}`}>Temperatura de inicio (°C) (18-24°C)</td>
                                     {temperaturaInicioPorEspecimen.map((value, idx) => (
                                         <td key={`temp-inicio-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
                                             <TableNumInputCompact
@@ -868,7 +892,7 @@ export default function CBRForm() {
                                     ))}
                                 </tr>
                                 <tr>
-                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>Temperatura final (°C) (18-24°C)</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS} ${STICKY_LABEL_TD_CLASS}`}>Temperatura final (°C) (18-24°C)</td>
                                     {temperaturaFinalPorEspecimen.map((value, idx) => (
                                         <td key={`temp-final-${idx}`} colSpan={2} className="px-2 py-1 border-r border-b border-border">
                                             <TableNumInputCompact
@@ -887,11 +911,11 @@ export default function CBRForm() {
                                 />
                                 <tr>
                                     <td
-                                        colSpan={7}
-                                        className="px-3 py-1.5 border-b border-border bg-muted/30 text-left font-semibold uppercase tracking-wide"
+                                        className={`px-3 py-1.5 border-b border-r border-border bg-muted/30 text-left font-semibold uppercase tracking-wide ${STICKY_LABEL_WIDTH_CLASS} ${STICKY_LABEL_TD_CLASS}`}
                                     >
                                         Determinacion de Humedad
                                     </td>
+                                    <td colSpan={6} className="px-2 py-1.5 border-b border-border bg-muted/30" />
                                 </tr>
                                 <ArrayTextRow
                                     label="Codigo tara"
@@ -915,7 +939,7 @@ export default function CBRForm() {
                                     onChange={(idx, raw) => setArrayNum('masa_suelo_humedo_tara_g_por_columna', idx, raw)}
                                 />
                                 <tr>
-                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_TD_CLASS}`}>Masa de suelo humedo (g) (*)</td>
+                                    <td className={`px-3 py-1 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS} ${STICKY_LABEL_TD_CLASS}`}>Masa de suelo humedo (g) (*)</td>
                                     {masaSueloHumedoPorColumna.map((value, idx) => (
                                         <td
                                             key={`calc-32-${idx}`}
@@ -981,12 +1005,31 @@ export default function CBRForm() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="mt-3 max-w-md">
-                        <NumberInput
-                            label="Profundidad de la hendidura (mm)"
-                            value={form.profundidad_hendidura_mm}
-                            onChange={v => setNum('profundidad_hendidura_mm', v)}
-                        />
+                    <div className="mt-3">
+                        <p className="text-sm font-medium text-foreground mb-2">Profundidad de la hendidura (mm)</p>
+                        <div className="overflow-x-auto rounded-md border border-border max-w-3xl">
+                            <table className="w-full min-w-[620px] text-sm">
+                                <thead className="bg-muted/40">
+                                    <tr>
+                                        <th className="px-2 py-1.5 border-b border-r border-border text-center">Especimen N°01</th>
+                                        <th className="px-2 py-1.5 border-b border-r border-border text-center">Especimen N°02</th>
+                                        <th className="px-2 py-1.5 border-b border-border text-center">Especimen N°03</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        {Array.from({ length: HENDIDURA_CELLS }, (_, idx) => (
+                                            <td key={`hendidura-${idx}`} className={`px-2 py-1 border-b border-border ${idx < HENDIDURA_CELLS - 1 ? 'border-r' : ''}`}>
+                                                <TableNumInputCompact
+                                                    value={form.profundidad_hendidura_mm_por_celda[idx] ?? undefined}
+                                                    onChange={v => setArrayNum('profundidad_hendidura_mm_por_celda', idx, v)}
+                                                />
+                                            </td>
+                                        ))}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </Section>
 
@@ -1009,7 +1052,7 @@ export default function CBRForm() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {Array.from({ length: 6 }, (_, idx) => (
+                                        {Array.from({ length: HINCHAMIENTO_ROWS }, (_, idx) => (
                                             <tr key={`hinch-${idx}`}>
                                                 <td className="px-2 py-1 border-b border-r border-border">
                                                     <TableTextInputCompact
@@ -1644,7 +1687,9 @@ function ArrayNumberRow({
     stickyLabel?: boolean
     onChange: (idx: number, raw: string) => void
 }) {
-    const labelClass = compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"
+    const labelClass = compact
+        ? `px-3 py-1 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS}`
+        : `px-3 py-2 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS}`
     return (
         <tr>
             <td className={`${labelClass} ${stickyLabel ? STICKY_LABEL_TD_CLASS : ""}`}>{label}</td>
@@ -1677,7 +1722,9 @@ function ArrayTextRow({
     stickyLabel?: boolean
     onChange: (idx: number, raw: string) => void
 }) {
-    const labelClass = compact ? "px-3 py-1 border-r border-b border-border" : "px-3 py-2 border-r border-b border-border"
+    const labelClass = compact
+        ? `px-3 py-1 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS}`
+        : `px-3 py-2 border-r border-b border-border ${STICKY_LABEL_WIDTH_CLASS}`
     return (
         <tr>
             <td className={`${labelClass} ${stickyLabel ? STICKY_LABEL_TD_CLASS : ""}`}>{label}</td>
