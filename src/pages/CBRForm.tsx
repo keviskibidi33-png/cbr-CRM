@@ -365,6 +365,15 @@ const DRAFT_DEBOUNCE_MS = 700
 const STICKY_LABEL_WIDTH_CLASS = "w-[320px] min-w-[320px] max-w-[320px]"
 const STICKY_LABEL_TH_CLASS = "sticky left-0 z-50 bg-muted relative shadow-[8px_0_12px_-10px_rgba(15,23,42,0.45)] after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-border"
 const STICKY_LABEL_TD_CLASS = "sticky left-0 z-40 bg-background relative shadow-[8px_0_12px_-10px_rgba(15,23,42,0.35)] after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-border"
+const PEN_STICKY_TIME_WIDTH_CLASS = "w-[88px] min-w-[88px] max-w-[88px]"
+const PEN_STICKY_IN_WIDTH_CLASS = "w-[160px] min-w-[160px] max-w-[160px]"
+const PEN_STICKY_MM_WIDTH_CLASS = "w-[180px] min-w-[180px] max-w-[180px]"
+const PEN_STICKY_TIME_TH_CLASS = "sticky left-0 z-40 bg-muted/40"
+const PEN_STICKY_IN_TH_CLASS = "sticky left-[88px] z-40 bg-muted/40"
+const PEN_STICKY_MM_TH_CLASS = "sticky left-[248px] z-40 bg-muted/40 relative shadow-[8px_0_12px_-10px_rgba(15,23,42,0.35)] after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-border"
+const PEN_STICKY_TIME_TD_CLASS = "sticky left-0 z-30 bg-muted/20"
+const PEN_STICKY_IN_TD_CLASS = "sticky left-[88px] z-30 bg-muted/20"
+const PEN_STICKY_MM_TD_CLASS = "sticky left-[248px] z-30 bg-muted/20 relative shadow-[8px_0_12px_-10px_rgba(15,23,42,0.25)] after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-border"
 
 const getDraftStorageKey = (ensayoId: number | null): string => {
     return `${CBR_DRAFT_STORAGE_PREFIX}:${ensayoId ?? 'new'}`
@@ -970,12 +979,12 @@ export default function CBRForm() {
 
                 <Section title="Lectura de Penetracion">
                     <div className="overflow-x-auto rounded-md border border-border">
-                        <table className="w-full min-w-[1100px] text-sm">
+                        <table className="w-full min-w-[1100px] table-fixed text-sm">
                             <thead className="bg-muted/40">
                                 <tr>
-                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Tiempo</th>
-                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Penetracion (in)</th>
-                                    <th className="px-2 py-1.5 border-b border-r border-border text-center">Penetracion (mm)</th>
+                                    <th className={`px-2 py-1.5 border-b border-r border-border text-center ${PEN_STICKY_TIME_WIDTH_CLASS} ${PEN_STICKY_TIME_TH_CLASS}`}>Tiempo</th>
+                                    <th className={`px-2 py-1.5 border-b border-r border-border text-center ${PEN_STICKY_IN_WIDTH_CLASS} ${PEN_STICKY_IN_TH_CLASS}`}>Penetracion (in)</th>
+                                    <th className={`px-2 py-1.5 border-b border-r border-border text-center ${PEN_STICKY_MM_WIDTH_CLASS} ${PEN_STICKY_MM_TH_CLASS}`}>Penetracion (mm)</th>
                                     <th className="px-2 py-1.5 border-b border-r border-border text-center">Tension estandar</th>
                                     <th className="px-2 py-1.5 border-b border-r border-border text-center">Dial Especimen N°01</th>
                                     <th className="px-2 py-1.5 border-b border-r border-border text-center">Dial Especimen N°02</th>
@@ -985,9 +994,9 @@ export default function CBRForm() {
                             <tbody>
                                 {PENETRACION_BASE.map((base, idx) => (
                                     <tr key={base.tiempo}>
-                                        <td className="px-2 py-1 border-b border-r border-border text-center bg-muted/20">{base.tiempo}</td>
-                                        <td className="px-2 py-1 border-b border-r border-border text-center bg-muted/20">{base.pulg.toFixed(3)}</td>
-                                        <td className="px-2 py-1 border-b border-r border-border text-center bg-muted/20">{base.mm.toFixed(2)}</td>
+                                        <td className={`px-2 py-1 border-b border-r border-border text-center ${PEN_STICKY_TIME_WIDTH_CLASS} ${PEN_STICKY_TIME_TD_CLASS}`}>{base.tiempo}</td>
+                                        <td className={`px-2 py-1 border-b border-r border-border text-center ${PEN_STICKY_IN_WIDTH_CLASS} ${PEN_STICKY_IN_TD_CLASS}`}>{base.pulg.toFixed(3)}</td>
+                                        <td className={`px-2 py-1 border-b border-r border-border text-center ${PEN_STICKY_MM_WIDTH_CLASS} ${PEN_STICKY_MM_TD_CLASS}`}>{base.mm.toFixed(2)}</td>
                                         <td className="px-2 py-1 border-b border-r border-border">
                                             <TableFixedValueCompact value={getFixedTensionStandard(idx)} />
                                         </td>
