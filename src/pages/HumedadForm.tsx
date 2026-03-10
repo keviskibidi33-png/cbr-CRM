@@ -85,7 +85,7 @@ const normalizeFlexibleDate = (raw: string): string => {
 const INITIAL_STATE: HumedadPayload = {
     muestra: '',
     numero_ot: '',
-    fecha_ensayo: formatTodayShortDate(),
+    fecha_ensayo: '',
     realizado_por: '',
     condicion_masa_menor: '-',
     condicion_capas: '-',
@@ -128,7 +128,7 @@ const INITIAL_STATE: HumedadPayload = {
     revisado_por: '',
     revisado_fecha: '',
     aprobado_por: '',
-    aprobado_fecha: '',
+    aprobado_fecha: formatTodayShortDate(),
 }
 
 type CondicionKey = 'condicion_masa_menor' | 'condicion_capas' | 'condicion_temperatura' | 'condicion_excluido'
