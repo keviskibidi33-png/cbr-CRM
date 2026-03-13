@@ -427,9 +427,10 @@ const hydrateCBRFormSnapshot = (payload?: Partial<CBRPayload> | null): CBRPayloa
         merged.profundidad_hendidura_mm_por_celda,
         HENDIDURA_CELLS,
     )
+    const allHendiduraEmpty = merged.profundidad_hendidura_mm_por_celda.every(value => value == null)
     if (
         merged.profundidad_hendidura_mm != null
-        && merged.profundidad_hendidura_mm_por_celda.every(value => value == null)
+        && allHendiduraEmpty
     ) {
         merged.profundidad_hendidura_mm_por_celda[0] = merged.profundidad_hendidura_mm
     }
@@ -1370,29 +1371,6 @@ function Input({ label, value, onChange, placeholder, onBlur }: {
     )
 }
 
-function NumberInput({ label, value, onChange }: {
-    label: string
-    value: number | undefined | null
-    onChange: (raw: string) => void
-}) {
-    return (
-        <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">{label}</label>
-            <input
-                type="number"
-                step="any"
-                value={value ?? ''}
-                onChange={e => onChange(e.target.value)}
-                onKeyDown={handleAdvanceOnEnter}
-                autoComplete="off"
-                data-lpignore="true"
-                data-enter-nav="true"
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-        </div>
-    )
-}
-
 function SelectField({ label, value, onChange, options }: {
     label: string
     value: string
@@ -1650,32 +1628,12 @@ function TableNumInputCompact({ value, onChange }: {
     )
 }
 
-function TableComputedValue({ value }: {
-    value: number | null
-}) {
-    return (
-        <div className="h-8 px-2 rounded-md border border-input bg-muted/30 text-sm flex items-center justify-center text-foreground font-medium">
-            {value != null ? value : '-'}
-        </div>
-    )
-}
-
 function TableComputedValueCompact({ value }: {
     value: number | null
 }) {
     return (
         <div className="h-7 px-2 rounded-md border border-input bg-muted/30 text-sm flex items-center justify-center text-foreground font-medium">
             {value != null ? value : '-'}
-        </div>
-    )
-}
-
-function TableFixedValue({ value }: {
-    value?: number
-}) {
-    return (
-        <div className="h-8 px-2 rounded-md border border-input bg-muted/40 text-sm flex items-center justify-center text-foreground font-semibold">
-            {value ?? '-'}
         </div>
     )
 }
@@ -1754,29 +1712,6 @@ function ArrayTextRow({
                     ) : (
                         <TableTextInput value={value ?? ''} onChange={raw => onChange(idx, raw)} />
                     )}
-                </td>
-            ))}
-        </tr>
-    )
-}
-
-function ArraySelectRow({
-    label,
-    values,
-    options,
-    onChange,
-}: {
-    label: string
-    values: Array<string | null>
-    options: DropdownOption[]
-    onChange: (idx: number, raw: string) => void
-}) {
-    return (
-        <tr>
-            <td className="px-3 py-2 border-r border-b border-border">{label}</td>
-            {values.map((value, idx) => (
-                <td key={`${label}-${idx}`} className="px-2 py-2 border-b border-border">
-                    <TableSelectInput value={value || '-'} options={options} onChange={raw => onChange(idx, raw)} />
                 </td>
             ))}
         </tr>
