@@ -3,12 +3,26 @@ import toast from 'react-hot-toast'
 import { ChevronDown, Download, Loader2, Droplets, FlaskConical } from 'lucide-react'
 import TMCalculator from '@/components/TMCalculator'
 import {
+
+
     getHumedadEnsayoDetail,
     saveAndDownloadHumedadExcel,
     saveHumedadEnsayo,
 } from '@/services/api'
 import type { HumedadPayload, HumedadEnsayoDetail } from '@/types'
 import FormatConfirmModal from '../components/FormatConfirmModal'
+
+const buildFormatPreview = (sampleCode: string | undefined, materialCode: 'SU' | 'AG', ensayo: string) => {
+    const currentYear = new Date().getFullYear().toString().slice(-2)
+    const normalized = (sampleCode || '').trim().toUpperCase()
+    const fullMatch = normalized.match(/^(\d+)(?:-[A-Z0-9. ]+)?-(\d{2,4})$/)
+    const partialMatch = normalized.match(/^(\d+)(?:-(\d{2,4}))?$/)
+    const match = fullMatch || partialMatch
+    const numero = match?.[1] || 'xxxx'
+    const year = (match?.[2] || currentYear).slice(-2)
+    return `Formato N-${numero}-${materialCode}-${year} ${ensayo}`
+}
+
 
 const getCurrentYearShort = () => new Date().getFullYear().toString().slice(-2)
 
@@ -265,11 +279,11 @@ export default function HumedadForm() {
         }
     }, [editingEnsayoId])
 
-    const downloadBlob = useCallback((blob: Blob, numeroOt: string) => {
+    const downloadBlob = useCallback((blob: Blob, filename: string) => {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `Humedad_${numeroOt}_${new Date().toISOString().slice(0, 10)}.xlsx`
+        a.download = filename || `${buildFormatPreview(form.muestra, 'SU', 'HUMEDAD')}.xlsx`
         a.click()
         URL.revokeObjectURL(url)
     }, [])
@@ -297,8 +311,8 @@ export default function HumedadForm() {
         try {
             const payload = buildPayload()
             if (withDownload) {
-                const { blob } = await saveAndDownloadHumedadExcel(payload, editingEnsayoId ?? undefined)
-                downloadBlob(blob, payload.numero_ot)
+                const { blob, filename } = await saveAndDownloadHumedadExcel(payload, editingEnsayoId ?? undefined)
+                downloadBlob(blob, filename || `${buildFormatPreview(form.muestra, 'SU', 'HUMEDAD')}.xlsx`)
                 toast.success(editingEnsayoId ? 'Formato actualizado y descargado.' : 'Formato guardado y descargado.')
             } else {
                 await saveHumedadEnsayo(payload, editingEnsayoId ?? undefined)
@@ -847,7 +861,7 @@ function MetodoGrid({
             </div>
             <FormatConfirmModal
                 open={pendingFormatAction !== null}
-                formatLabel={`Formato N-xxxx-SU-${new Date().getFullYear().toString().slice(-2)} HUMEDAD`}
+                formatLabel={buildFormatPreview(form.muestra, 'SU', 'HUMEDAD')}
                 actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
                 onClose={() => setPendingFormatAction(null)}
                 onConfirm={() => {

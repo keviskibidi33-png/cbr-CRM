@@ -16,6 +16,19 @@ import type {
 } from '@/types'
 import FormatConfirmModal from '../components/FormatConfirmModal'
 
+
+const buildFormatPreview = (sampleCode: string | undefined, materialCode: 'SU' | 'AG', ensayo: string) => {
+    const currentYear = new Date().getFullYear().toString().slice(-2)
+    const normalized = (sampleCode || '').trim().toUpperCase()
+    const fullMatch = normalized.match(/^(\d+)(?:-[A-Z0-9. ]+)?-(\d{2,4})$/)
+    const partialMatch = normalized.match(/^(\d+)(?:-(\d{2,4}))?$/)
+    const match = fullMatch || partialMatch
+    const numero = match?.[1] || 'xxxx'
+    const year = (match?.[2] || currentYear).slice(-2)
+    return `Formato N-${numero}-${materialCode}-${year} ${ensayo}`
+}
+
+
 const getCurrentYearShort = () => new Date().getFullYear().toString().slice(-2)
 
 
@@ -652,11 +665,11 @@ export default function CBRForm() {
         return () => window.clearTimeout(timeoutId)
     }, [draftStorageKey, editingEnsayoId, form, loadingEnsayo])
 
-    const downloadBlob = useCallback((blob: Blob, numeroOt: string) => {
+    const downloadBlob = useCallback((blob: Blob, filename: string) => {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `CBR_${numeroOt}_${new Date().toISOString().slice(0, 10)}.xlsx`
+        a.download = filename
         a.click()
         URL.revokeObjectURL(url)
     }, [])
@@ -691,8 +704,8 @@ export default function CBRForm() {
                 profundidad_hendidura_mm: profundidadHendiduraPorCelda[0] ?? undefined,
             }
             if (withDownload) {
-                const { blob } = await saveAndDownloadCBRExcel(payload, editingEnsayoId ?? undefined)
-                downloadBlob(blob, payload.numero_ot)
+                const { blob, filename } = await saveAndDownloadCBRExcel(payload, editingEnsayoId ?? undefined)
+                downloadBlob(blob, filename || `${buildFormatPreview(form.muestra, 'SU', 'CBR')}.xlsx`)
                 toast.success(editingEnsayoId ? 'Formato CBR actualizado y descargado.' : 'Formato CBR guardado y descargado.')
             } else {
                 await saveCBREnsayo(payload, editingEnsayoId ?? undefined)
@@ -1226,6 +1239,18 @@ export default function CBRForm() {
                     </div>
                 </div>
             </div>
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1242,6 +1267,18 @@ function Section({ title, icon, children }: {
                 <h2 className="text-sm font-semibold text-foreground">{title}</h2>
             </div>
             <div className="p-4">{children}</div>
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1308,6 +1345,18 @@ function HumedadResumenTable({
                     </table>
                 </div>
             </div>
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1338,6 +1387,18 @@ function MoldCodeReferenceTable() {
                     </table>
                 </div>
             </div>
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1364,6 +1425,18 @@ function Input({ label, value, onChange, placeholder, onBlur }: {
                 data-enter-nav="true"
                 className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1391,6 +1464,18 @@ function SelectField({ label, value, onChange, options }: {
                 </select>
                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1418,6 +1503,18 @@ function EquipmentSelect({ label, value, onChange, options }: {
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             </div>
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1433,6 +1530,18 @@ function ConditionRow({
         <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-3 items-center">
             <p className="text-sm md:text-[15px] text-muted-foreground font-medium">{label}</p>
             {children}
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1493,6 +1602,18 @@ function ConditionSelectInput({ value, options, onChange }: {
                 ))}
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1560,6 +1681,18 @@ function TableSelectInput({ value, options, onChange }: {
                 ))}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1583,6 +1716,18 @@ function TableSelectInputCompact({ value, options, onChange }: {
                 ))}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1631,6 +1776,18 @@ function TableComputedValueCompact({ value }: {
     return (
         <div className="h-7 px-2 rounded-md border border-input bg-muted/30 text-sm flex items-center justify-center text-foreground font-medium">
             {value != null ? value : '-'}
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
@@ -1641,6 +1798,18 @@ function TableFixedValueCompact({ value }: {
     return (
         <div className="h-7 px-2 rounded-md border border-input bg-muted/40 text-sm flex items-center justify-center text-foreground font-semibold">
             {value ?? '-'}
+        <FormatConfirmModal
+            open={pendingFormatAction !== null}
+            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+            onClose={() => setPendingFormatAction(null)}
+            onConfirm={() => {
+                if (pendingFormatAction === null) return
+                const shouldDownload = pendingFormatAction
+                setPendingFormatAction(null)
+                void handleSave(shouldDownload)
+            }}
+        />
         </div>
     )
 }
