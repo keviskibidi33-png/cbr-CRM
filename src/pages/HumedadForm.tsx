@@ -379,7 +379,7 @@ export default function HumedadForm() {
                             <Input label="Fecha Ensayo" value={form.fecha_ensayo}
                                    onChange={v => set('fecha_ensayo', v)}
                                    onBlur={() => applyFormattedField('fecha_ensayo', normalizeFlexibleDate)}
-                                   placeholder="DD/MM/AA" />
+                                   placeholder="YYYY/MM/DD" />
                             <Input label="Realizado por *" value={form.realizado_por}
                                    onChange={v => set('realizado_por', v)} />
                         </div>
@@ -589,13 +589,13 @@ export default function HumedadForm() {
                             <Input label="Fecha revisión" value={form.revisado_fecha || ''}
                                    onChange={v => set('revisado_fecha', v)}
                                    onBlur={() => applyFormattedField('revisado_fecha', normalizeFlexibleDate)}
-                                   placeholder="DD/MM/AA" />
+                                   placeholder="YYYY/MM/DD" />
                             <Input label="Aprobado por" value={form.aprobado_por || ''}
                                    onChange={v => set('aprobado_por', v)} />
                             <Input label="Fecha aprobación" value={form.aprobado_fecha || ''}
                                    onChange={v => set('aprobado_fecha', v)}
                                    onBlur={() => applyFormattedField('aprobado_fecha', normalizeFlexibleDate)}
-                                   placeholder="DD/MM/AA" />
+                                   placeholder="YYYY/MM/DD" />
                         </div>
                     </Section>
 

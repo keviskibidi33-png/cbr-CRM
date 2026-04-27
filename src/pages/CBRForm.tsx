@@ -777,7 +777,7 @@ export default function CBRForm() {
                             value={form.fecha_ensayo}
                             onChange={v => set('fecha_ensayo', v)}
                             onBlur={() => applyFormattedField('fecha_ensayo', normalizeFlexibleDate)}
-                            placeholder="DD/MM/AA"
+                            placeholder="YYYY/MM/DD"
                         />
                         <Input
                             label="Realizado por *"
@@ -1086,7 +1086,7 @@ export default function CBRForm() {
                                                         value={form.hinchamiento[idx]?.fecha || ''}
                                                         onChange={v => setHinchamiento(idx, 'fecha', v)}
                                                         onBlur={() => setHinchamiento(idx, 'fecha', normalizeFlexibleDate(form.hinchamiento[idx]?.fecha || ''))}
-                                                        placeholder="DD/MM/YY"
+                                                        placeholder="YYYY/MM/DD"
                                                     />
                                                 </td>
                                                 <td className="px-2 py-1 border-b border-r border-border">
@@ -1186,7 +1186,7 @@ export default function CBRForm() {
                             value={form.revisado_fecha || ''}
                             onChange={v => set('revisado_fecha', v)}
                             onBlur={() => applyFormattedField('revisado_fecha', normalizeFlexibleDate)}
-                            placeholder="DD/MM/AA"
+                            placeholder="YYYY/MM/DD"
                         />
                         <SelectField
                             label="Aprobado por"
@@ -1199,7 +1199,7 @@ export default function CBRForm() {
                             value={form.aprobado_fecha || ''}
                             onChange={v => set('aprobado_fecha', v)}
                             onBlur={() => applyFormattedField('aprobado_fecha', normalizeFlexibleDate)}
-                            placeholder="DD/MM/AA"
+                            placeholder="YYYY/MM/DD"
                         />
                     </div>
                 </Section>
