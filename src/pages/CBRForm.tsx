@@ -1681,18 +1681,6 @@ function TableSelectInput({ value, options, onChange }: {
                 ))}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1716,18 +1704,6 @@ function TableSelectInputCompact({ value, options, onChange }: {
                 ))}
             </select>
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1776,18 +1752,6 @@ function TableComputedValueCompact({ value }: {
     return (
         <div className="h-7 px-2 rounded-md border border-input bg-muted/30 text-sm flex items-center justify-center text-foreground font-medium">
             {value != null ? value : '-'}
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1798,18 +1762,6 @@ function TableFixedValueCompact({ value }: {
     return (
         <div className="h-7 px-2 rounded-md border border-input bg-muted/40 text-sm flex items-center justify-center text-foreground font-semibold">
             {value ?? '-'}
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
