@@ -69,28 +69,35 @@ const normalizeNumeroOtCode = (raw: string): string => {
 const normalizeFlexibleDate = (raw: string): string => {
     const value = raw.trim()
     if (!value) return ''
-
     const digits = value.replace(/\D/g, '')
-    const year = getCurrentYearShort()
+    const currentYear = String(new Date().getFullYear())
     const pad2 = (part: string) => part.padStart(2, '0').slice(-2)
-    const build = (d: string, m: string, y: string = year) => `${pad2(d)}/${pad2(m)}/${pad2(y)}`
+    const normalizeYear = (part: string) => {
+        const clean = part.replace(/\D/g, '')
+        if (clean.length >= 4) return clean.slice(0, 4)
+        if (clean.length === 2) return `20${clean}`
+        if (clean.length === 1) return `200${clean}`
+        return currentYear
+    }
+    const build = (y: string, m: string, d: string) => `${normalizeYear(y)}/${pad2(m)}/${pad2(d)}`
 
-    if (value.includes('/')) {
-        const [d = '', m = '', yRaw = ''] = value.split('/').map(part => part.trim())
-        if (!d || !m) return value
-        let yy = yRaw.replace(/\D/g, '')
-        if (yy.length === 4) yy = yy.slice(-2)
-        if (yy.length === 1) yy = `0${yy}`
-        if (!yy) yy = year
-        return build(d, m, yy)
+    if (value.includes('/') || value.includes('-')) {
+        const [a = '', b = '', c = ''] = value.split(/[/-]/).map((part) => part.trim())
+        if (!a || !b) return value
+        if (a.length === 4) return build(a, b, c || '01')
+        if (c) return build(c, b, a)
+        return value
     }
 
-    if (digits.length === 2) return build(digits[0], digits[1])
-    if (digits.length === 3) return build(digits[0], digits.slice(1, 3))
-    if (digits.length === 4) return build(digits.slice(0, 2), digits.slice(2, 4))
-    if (digits.length === 5) return build(digits[0], digits.slice(1, 3), digits.slice(3, 5))
-    if (digits.length === 6) return build(digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 6))
-    if (digits.length >= 8) return build(digits.slice(0, 2), digits.slice(2, 4), digits.slice(6, 8))
+    if (digits.length === 8) {
+        if (digits.startsWith('19') || digits.startsWith('20')) return build(digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8))
+        return build(digits.slice(4, 8), digits.slice(2, 4), digits.slice(0, 2))
+    }
+    if (digits.length === 6) return build(digits.slice(4, 6), digits.slice(2, 4), digits.slice(0, 2))
+    if (digits.length === 5) return build(digits.slice(3, 5), digits.slice(1, 3), digits[0])
+    if (digits.length === 4) return build(currentYear, digits.slice(0, 2), digits.slice(2, 4))
+    if (digits.length === 3) return build(currentYear, digits[0], digits.slice(1, 3))
+    if (digits.length === 2) return build(currentYear, digits[0], digits[1])
 
     return value
 }
@@ -1267,18 +1274,6 @@ function Section({ title, icon, children }: {
                 <h2 className="text-sm font-semibold text-foreground">{title}</h2>
             </div>
             <div className="p-4">{children}</div>
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1345,18 +1340,6 @@ function HumedadResumenTable({
                     </table>
                 </div>
             </div>
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1387,18 +1370,6 @@ function MoldCodeReferenceTable() {
                     </table>
                 </div>
             </div>
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1425,18 +1396,6 @@ function Input({ label, value, onChange, placeholder, onBlur }: {
                 data-enter-nav="true"
                 className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1464,18 +1423,6 @@ function SelectField({ label, value, onChange, options }: {
                 </select>
                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1503,18 +1450,6 @@ function EquipmentSelect({ label, value, onChange, options }: {
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             </div>
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1530,18 +1465,6 @@ function ConditionRow({
         <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-3 items-center">
             <p className="text-sm md:text-[15px] text-muted-foreground font-medium">{label}</p>
             {children}
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
@@ -1602,18 +1525,6 @@ function ConditionSelectInput({ value, options, onChange }: {
                 ))}
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-        <FormatConfirmModal
-            open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
-            actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-            onClose={() => setPendingFormatAction(null)}
-            onConfirm={() => {
-                if (pendingFormatAction === null) return
-                const shouldDownload = pendingFormatAction
-                setPendingFormatAction(null)
-                void handleSave(shouldDownload)
-            }}
-        />
         </div>
     )
 }
