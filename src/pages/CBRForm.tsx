@@ -1186,7 +1186,12 @@ export default function CBRForm() {
                             label="Revisado por"
                             value={form.revisado_por || '-'}
                             options={REVISADO_POR_OPTIONS}
-                            onChange={v => set('revisado_por', v)}
+                            onChange={v => {
+                                set('revisado_por', v)
+                                if (v !== '-') {
+                                    set('revisado_fecha', normalizeFlexibleDate(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Lima' })))
+                                }
+                            }}
                         />
                         <Input
                             label="Fecha revision"
@@ -1199,7 +1204,12 @@ export default function CBRForm() {
                             label="Aprobado por"
                             value={form.aprobado_por || '-'}
                             options={APROBADO_POR_OPTIONS}
-                            onChange={v => set('aprobado_por', v)}
+                            onChange={v => {
+                                set('aprobado_por', v)
+                                if (v !== '-') {
+                                    set('aprobado_fecha', normalizeFlexibleDate(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Lima' })))
+                                }
+                            }}
                         />
                         <Input
                             label="Fecha aprobacion"
