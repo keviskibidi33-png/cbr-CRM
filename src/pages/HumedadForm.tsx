@@ -179,7 +179,7 @@ const METHOD_B_ROWS: MetodoRowConfig[] = [
 const EQUIPO_OPTIONS: Record<EquipoKey, string[]> = {
     equipo_balanza_01: ['-', 'EQP-0046'],
     equipo_balanza_001: ['-', 'EQP-0045'],
-    equipo_horno: ['-', 'EQP-0049'],
+    equipo_horno: ['-', 'EQP-0150'],
 }
 
 const getEnsayoIdFromQuery = (): number | null => {
