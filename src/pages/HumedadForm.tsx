@@ -594,7 +594,7 @@ export default function HumedadForm() {
                             <Input label="Revisado por" value={form.revisado_por || ''}
                                    onChange={v => {
                                        set('revisado_por', v)
-                                       if (v.trim().toUpperCase() === 'FABIAN LA ROSA') {
+                                       if (v && v !== '-') {
                                            set('revisado_fecha', normalizeFlexibleDate(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Lima' })))
                                        }
                                    }} />
@@ -605,7 +605,7 @@ export default function HumedadForm() {
                             <Input label="Aprobado por" value={form.aprobado_por || ''}
                                    onChange={v => {
                                        set('aprobado_por', v)
-                                       if (v.trim().toUpperCase() === 'IRMA COAQUIRA') {
+                                       if (v && v !== '-') {
                                            set('aprobado_fecha', normalizeFlexibleDate(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Lima' })))
                                        }
                                    }} />
