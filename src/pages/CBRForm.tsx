@@ -373,8 +373,8 @@ interface HumedadResumenRow {
 
 const EQUIPO_OPTIONS: Record<EquipoKey, string[]> = {
     equipo_cbr: ['-', 'EQP-0026'],
-    equipo_dial_deformacion: ['-', 'EQP-0080'],
-    equipo_dial_expansion: ['-', 'EQP-0109'],
+    equipo_dial_deformacion: ['-', 'EQP-0109'],
+    equipo_dial_expansion: ['-', 'EQP-0080'],
     equipo_horno_110: ['-', 'EQP-0150', 'EQP-0049'],
     equipo_pison: ['-', 'INS-0196'],
     equipo_balanza_1g: ['-', 'EQP-0054'],
