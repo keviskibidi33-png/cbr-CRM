@@ -1679,28 +1679,6 @@ function TableTextInputCompact({ value, onChange, onBlur, placeholder }: {
     )
 }
 
-function TableSelectInput({ value, options, onChange }: {
-    value: string
-    options: DropdownOption[]
-    onChange: (raw: string) => void
-}) {
-    return (
-        <div className="relative">
-            <select
-                value={value}
-                onChange={e => onChange(e.target.value)}
-                onKeyDown={handleAdvanceOnEnter}
-                data-enter-nav="true"
-                className="w-full h-8 pl-2 pr-7 rounded-md border border-input bg-background text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-                {options.map(option => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-            </select>
-            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-        </div>
-    )
-}
 
 function TableSelectInputCompact({ value, options, onChange }: {
     value: string

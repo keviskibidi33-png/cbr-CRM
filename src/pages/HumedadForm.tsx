@@ -670,6 +670,18 @@ export default function HumedadForm() {
                     </div>
                 </div>
             </div>
+            <FormatConfirmModal
+                open={pendingFormatAction !== null}
+                formatLabel={buildFormatPreview(form.muestra, 'SU', 'HUMEDAD')}
+                actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
+                onClose={() => setPendingFormatAction(null)}
+                onConfirm={() => {
+                    if (pendingFormatAction === null) return
+                    const shouldDownload = pendingFormatAction
+                    setPendingFormatAction(null)
+                    void handleSave(shouldDownload)
+                }}
+            />
         </div>
     )
 }
@@ -876,19 +888,6 @@ function MetodoGrid({
                     </div>
                 ))}
             </div>
-            <FormatConfirmModal
-                open={pendingFormatAction !== null}
-                formatLabel={buildFormatPreview(form.muestra, 'SU', 'HUMEDAD')}
-                actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
-                onClose={() => setPendingFormatAction(null)}
-                onConfirm={() => {
-                    if (pendingFormatAction === null) return
-                    const shouldDownload = pendingFormatAction
-                    setPendingFormatAction(null)
-                    void handleSave(shouldDownload)
-                }}
-            />
-
         </div>
     )
 }
