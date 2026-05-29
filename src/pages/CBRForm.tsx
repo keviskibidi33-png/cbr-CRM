@@ -32,17 +32,48 @@ const buildFormatPreview = (sampleCode: string | undefined, materialCode: 'SU' |
 const getCurrentYearShort = () => new Date().getFullYear().toString().slice(-2)
 
 
-const normalizeMuestraCode = (raw: string): string => {
-    const value = raw.trim().toUpperCase()
-    if (!value) return ''
+const parseMuestraCode = (muestra: string, defaultType: 'SU' | 'AG' = 'SU') => {
+    const clean = (muestra || '').trim().toUpperCase().replace(/\s+/g, '')
+    const currentYear = '26'
+    if (!clean) return { number: '', type: defaultType, year: currentYear }
 
-    const compact = value.replace(/\s+/g, '')
-    const year = getCurrentYearShort()
-    const match = compact.match(/^(\d+)(?:-SU)?(?:-(\d{2}))?$/)
-    if (match) {
-        return `${match[1]}-SU-${match[2] || year}`
+    const parts = clean.split('-')
+    
+    let type: 'SU' | 'AG' = defaultType
+    if (clean.includes('-SU')) {
+        type = 'SU'
+    } else if (clean.includes('-AG')) {
+        type = 'AG'
     }
-    return value
+
+    const filteredParts = parts.filter(p => p !== 'SU' && p !== 'AG')
+
+    let number = ''
+    let year = currentYear
+
+    if (filteredParts.length === 0) {
+        return { number: '', type, year }
+    }
+
+    if (filteredParts.length === 1) {
+        number = filteredParts[0]
+    } else {
+        const last = filteredParts[filteredParts.length - 1]
+        if (/^\d{2,4}$/.test(last)) {
+            year = last.slice(-2)
+            number = filteredParts.slice(0, -1).join('-')
+        } else {
+            number = filteredParts.join('-')
+        }
+    }
+
+    return { number, type, year }
+}
+
+const buildMuestraCode = (number: string, type: 'SU' | 'AG', year: string) => {
+    const cleanNum = number.trim()
+    if (!cleanNum) return ''
+    return `${cleanNum}-${type}-${year}`
 }
 
 const normalizeNumeroOtCode = (raw: string): string => {
@@ -467,6 +498,40 @@ export default function CBRForm() {
     const [loadingEnsayo, setLoadingEnsayo] = useState(false)
     const draftStorageKey = useMemo(() => getDraftStorageKey(editingEnsayoId), [editingEnsayoId])
 
+    const [muestraInput, setMuestraInput] = useState('')
+    const [muestraType, setMuestraType] = useState<'SU' | 'AG'>('SU')
+
+    useEffect(() => {
+        if (form.muestra && !muestraInput) {
+            const { number, type, year } = parseMuestraCode(form.muestra, 'SU')
+            const currentYear = '26'
+            const displayVal = year && year !== currentYear ? `${number}-${year}` : number
+            setMuestraInput(displayVal)
+            setMuestraType(type)
+        }
+    }, [form.muestra, muestraInput])
+
+    useEffect(() => {
+        if (!form.muestra) {
+            setMuestraInput('')
+            setMuestraType('SU')
+        }
+    }, [form.muestra])
+
+    const handleMuestraInputChange = (val: string) => {
+        setMuestraInput(val)
+        const { number, year } = parseMuestraCode(val, muestraType)
+        const newCode = buildMuestraCode(number, muestraType, year)
+        set('muestra', newCode)
+    }
+
+    const handleTypeToggle = (newType: 'SU' | 'AG') => {
+        setMuestraType(newType)
+        const { number, year } = parseMuestraCode(muestraInput, newType)
+        const newCode = buildMuestraCode(number, newType, year)
+        set('muestra', newCode)
+    }
+
     const set = useCallback(<K extends keyof CBRPayload>(key: K, value: CBRPayload[K]) => {
         setForm(prev => ({ ...prev, [key]: value }))
     }, [])
@@ -712,7 +777,7 @@ export default function CBRForm() {
             }
             if (withDownload) {
                 const { blob, filename } = await saveAndDownloadCBRExcel(payload, editingEnsayoId ?? undefined)
-                downloadBlob(blob, filename || `${buildFormatPreview(form.muestra, 'SU', 'CBR')}.xlsx`)
+                downloadBlob(blob, filename || `${buildFormatPreview(form.muestra, muestraType, 'CBR')}.xlsx`)
                 toast.success(editingEnsayoId ? 'Formato CBR actualizado y descargado.' : 'Formato CBR guardado y descargado.')
             } else {
                 await saveCBREnsayo(payload, editingEnsayoId ?? undefined)
@@ -735,7 +800,7 @@ export default function CBRForm() {
         } finally {
             setLoading(false)
         }
-    }, [closeParentModalIfEmbedded, downloadBlob, draftStorageKey, editingEnsayoId, form])
+    }, [closeParentModalIfEmbedded, downloadBlob, draftStorageKey, editingEnsayoId, form, muestraType])
 
     return (
         <div className="max-w-7xl mx-auto p-4 md:p-6">
@@ -765,13 +830,44 @@ export default function CBRForm() {
                 <div className="lg:col-span-2 space-y-5">
                 <Section title="Encabezado" icon={<FlaskConical className="h-4 w-4" />}>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <Input
-                            label="Codigo de muestra *"
-                            value={form.muestra}
-                            onChange={v => set('muestra', v)}
-                            onBlur={() => set('muestra', normalizeMuestraCode(form.muestra))}
-                            placeholder="XXX-SU-26"
-                        />
+                        <div>
+                            <label className="block text-xs font-medium text-muted-foreground mb-1">Codigo de muestra *</label>
+                            <div className="flex items-center gap-1.5">
+                                <input
+                                    type="text"
+                                    value={muestraInput}
+                                    onChange={(e) => handleMuestraInputChange(e.target.value)}
+                                    placeholder="1234"
+                                    autoComplete="off"
+                                    data-lpignore="true"
+                                    className="flex-1 h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                />
+                                <div className="flex border border-slate-300 rounded overflow-hidden shrink-0 h-9 bg-background">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleTypeToggle('SU')}
+                                        className={`px-3 py-1 text-xs font-bold transition-all ${
+                                            muestraType === 'SU'
+                                                ? 'bg-slate-900 text-white'
+                                                : 'bg-background text-muted-foreground hover:bg-muted'
+                                        }`}
+                                    >
+                                        SU
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleTypeToggle('AG')}
+                                        className={`px-3 py-1 text-xs font-bold border-l border-slate-300 transition-all ${
+                                            muestraType === 'AG'
+                                                ? 'bg-slate-900 text-white'
+                                                : 'bg-background text-muted-foreground hover:bg-muted'
+                                        }`}
+                                    >
+                                        AG
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <Input
                             label="N OT *"
                             value={form.numero_ot}
@@ -1258,7 +1354,7 @@ export default function CBRForm() {
             </div>
         <FormatConfirmModal
             open={pendingFormatAction !== null}
-            formatLabel={buildFormatPreview(form.muestra, 'SU', 'CBR')}
+            formatLabel={buildFormatPreview(form.muestra, muestraType, 'CBR')}
             actionLabel={pendingFormatAction ? 'Guardar y Descargar' : 'Guardar'}
             onClose={() => setPendingFormatAction(null)}
             onConfirm={() => {
