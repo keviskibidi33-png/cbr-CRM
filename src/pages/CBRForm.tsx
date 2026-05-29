@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useCallback, useEffect, type KeyboardEvent } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef, type KeyboardEvent } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { ChevronDown, Download, Loader2, FlaskConical, Gauge } from 'lucide-react'
@@ -484,6 +484,20 @@ const hydrateCBRFormSnapshot = (payload?: Partial<CBRPayload> | null): CBRPayloa
     return merged
 }
 
+interface CBRDraftSnapshot {
+    version: number
+    updatedAt: string
+    form: Partial<CBRPayload>
+}
+
+const areCBRFormsEquivalent = (left: CBRPayload, right: CBRPayload): boolean => {
+    return JSON.stringify(left) === JSON.stringify(right)
+}
+
+const isCBRFormAtInitialState = (form: CBRPayload): boolean => {
+    return areCBRFormsEquivalent(form, buildInitialState())
+}
+
 const getEnsayoIdFromQuery = (): number | null => {
     const raw = new URLSearchParams(window.location.search).get('ensayo_id')
     if (!raw) return null
@@ -497,6 +511,8 @@ export default function CBRForm() {
     const [editingEnsayoId, setEditingEnsayoId] = useState<number | null>(() => getEnsayoIdFromQuery())
     const [loadingEnsayo, setLoadingEnsayo] = useState(false)
     const draftStorageKey = useMemo(() => getDraftStorageKey(editingEnsayoId), [editingEnsayoId])
+    const hydratedFromServerRef = useRef<CBRPayload | null>(null)
+    const restoredDraftKeysRef = useRef<Set<string>>(new Set())
 
     const [muestraInput, setMuestraInput] = useState('')
     const [muestraType, setMuestraType] = useState<'SU' | 'AG'>('SU')
@@ -718,7 +734,9 @@ export default function CBRForm() {
                     return
                 }
                 if (!cancelled) {
-                    setForm(hydrateCBRFormSnapshot(detail.payload))
+                    const nextState = hydrateCBRFormSnapshot(detail.payload)
+                    hydratedFromServerRef.current = nextState
+                    setForm(nextState)
                 }
             } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -737,14 +755,29 @@ export default function CBRForm() {
     }, [editingEnsayoId])
 
     useEffect(() => {
-        if (editingEnsayoId || loadingEnsayo) return
+        if (typeof window === 'undefined') return
+        if (loadingEnsayo) return
+        if (restoredDraftKeysRef.current.has(draftStorageKey)) return
 
+        restoredDraftKeysRef.current.add(draftStorageKey)
         const raw = localStorage.getItem(draftStorageKey)
         if (!raw) return
 
         try {
-            const parsed = JSON.parse(raw) as Partial<CBRPayload>
-            setForm(hydrateCBRFormSnapshot(parsed))
+            const parsed = JSON.parse(raw) as CBRDraftSnapshot
+            if (!parsed || typeof parsed !== 'object' || typeof parsed.form !== 'object') {
+                localStorage.removeItem(draftStorageKey)
+                return
+            }
+
+            const hydratedDraft = hydrateCBRFormSnapshot(parsed.form)
+
+            if (editingEnsayoId && hydratedFromServerRef.current && areCBRFormsEquivalent(hydratedDraft, hydratedFromServerRef.current)) {
+                localStorage.removeItem(draftStorageKey)
+                return
+            }
+
+            setForm(hydratedDraft)
             toast.success('Se restauró un borrador local de CBR.', { duration: 2500 })
         } catch {
             localStorage.removeItem(draftStorageKey)
@@ -752,10 +785,27 @@ export default function CBRForm() {
     }, [draftStorageKey, editingEnsayoId, loadingEnsayo])
 
     useEffect(() => {
-        if (editingEnsayoId || loadingEnsayo) return
+        if (typeof window === 'undefined') return
+        if (loadingEnsayo) return
 
         const timeoutId = window.setTimeout(() => {
-            localStorage.setItem(draftStorageKey, JSON.stringify(form))
+            const sameAsServer = Boolean(
+                editingEnsayoId &&
+                hydratedFromServerRef.current &&
+                areCBRFormsEquivalent(form, hydratedFromServerRef.current)
+            )
+
+            if (isCBRFormAtInitialState(form) || sameAsServer) {
+                localStorage.removeItem(draftStorageKey)
+                return
+            }
+
+            const snapshot: CBRDraftSnapshot = {
+                version: 1,
+                updatedAt: new Date().toISOString(),
+                form,
+            }
+            localStorage.setItem(draftStorageKey, JSON.stringify(snapshot))
         }, DRAFT_DEBOUNCE_MS)
 
         return () => window.clearTimeout(timeoutId)
