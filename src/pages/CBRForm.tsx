@@ -853,8 +853,8 @@ export default function CBRForm() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-5">
                 <Section title="Encabezado" icon={<FlaskConical className="h-4 w-4" />}>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <div className="md:col-span-2">
                             <label className="block text-xs font-medium text-muted-foreground mb-1">Codigo de muestra *</label>
                             <div className="flex min-w-0 items-center gap-1.5">
                                 <input
@@ -867,29 +867,29 @@ export default function CBRForm() {
                                     className="min-w-0 flex-1 h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                 />
                                 <div className="flex h-9 shrink-0 items-center rounded-md border border-slate-300 bg-background px-1.5">
-                                        <select
-                                            value={muestraType}
-                                            onChange={(e) => handleTypeToggle(e.target.value as 'SU' | 'AG')}
-                                            className="h-7 w-[92px] rounded-md border-0 bg-transparent px-2 text-xs font-bold uppercase text-slate-700 focus:outline-none focus:ring-0"
-                                            aria-label="Tipo de muestra"
-                                        >
-                                            <option value="SU">SU</option>
-                                            <option value="AG">AG</option>
-                                        </select>
-                                    </div>
-                                    <span className="shrink-0 text-sm font-semibold text-slate-500">-</span>
-                                    <div className="flex h-9 shrink-0 items-center rounded-md border border-slate-300 bg-background px-1.5">
-                                        <input
-                                            type="text"
-                                            value={muestraYear}
-                                            onChange={(e) => handleYearChange(e.target.value)}
-                                            onBlur={handleYearBlur}
-                                            maxLength={2}
-                                            inputMode="numeric"
-                                            aria-label="Año de muestra"
-                                            className="h-7 w-[56px] rounded-md border-0 bg-transparent px-2 text-center text-xs font-bold text-slate-700 focus:outline-none focus:ring-0"
-                                        />
-                                    </div>
+                                    <select
+                                        value={muestraType}
+                                        onChange={(e) => handleTypeToggle(e.target.value as 'SU' | 'AG')}
+                                        className="h-7 w-[88px] rounded-md border-0 bg-transparent px-2 text-xs font-bold uppercase text-slate-700 focus:outline-none focus:ring-0"
+                                        aria-label="Tipo de muestra"
+                                    >
+                                        <option value="SU">SU</option>
+                                        <option value="AG">AG</option>
+                                    </select>
+                                </div>
+                                <span className="shrink-0 text-sm font-semibold text-slate-500">-</span>
+                                <div className="flex h-9 shrink-0 items-center rounded-md border border-slate-300 bg-background px-1.5">
+                                    <input
+                                        type="text"
+                                        value={muestraYear}
+                                        onChange={(e) => handleYearChange(e.target.value)}
+                                        onBlur={handleYearBlur}
+                                        maxLength={2}
+                                        inputMode="numeric"
+                                        aria-label="Año de muestra"
+                                        className="h-7 w-[48px] rounded-md border-0 bg-transparent px-2 text-center text-xs font-bold text-slate-700 focus:outline-none focus:ring-0"
+                                    />
+                                </div>
                             </div>
                         </div>
                         <Input
