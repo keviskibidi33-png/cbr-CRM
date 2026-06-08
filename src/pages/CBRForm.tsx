@@ -510,6 +510,8 @@ export default function CBRForm() {
     const [loading, setLoading] = useState(false)
     const [editingEnsayoId, setEditingEnsayoId] = useState<number | null>(() => getEnsayoIdFromQuery())
     const [loadingEnsayo, setLoadingEnsayo] = useState(false)
+    const [showDraftBanner, setShowDraftBanner] = useState(false)
+    const [draftData, setDraftData] = useState<CBRPayload | null>(null)
     const draftStorageKey = useMemo(() => getDraftStorageKey(editingEnsayoId), [editingEnsayoId])
     const hydratedFromServerRef = useRef<CBRPayload | null>(null)
     const restoredDraftKeysRef = useRef<Set<string>>(new Set())
@@ -736,6 +738,26 @@ export default function CBRForm() {
                 if (!cancelled) {
                     const nextState = hydrateCBRFormSnapshot(detail.payload)
                     hydratedFromServerRef.current = nextState
+
+                    // Compare with local draft
+                    const rawDraft = localStorage.getItem(draftStorageKey)
+                    if (rawDraft) {
+                        try {
+                            const parsed = JSON.parse(rawDraft) as CBRDraftSnapshot
+                            if (parsed && typeof parsed === 'object' && typeof parsed.form === 'object') {
+                                const draftState = hydrateCBRFormSnapshot(parsed.form)
+                                if (!areCBRFormsEquivalent(draftState, nextState)) {
+                                    setDraftData(draftState)
+                                    setShowDraftBanner(true)
+                                } else {
+                                    localStorage.removeItem(draftStorageKey)
+                                }
+                            }
+                        } catch {
+                            // Ignored
+                        }
+                    }
+
                     setForm(nextState)
                 }
             } catch (err: unknown) {
@@ -752,11 +774,11 @@ export default function CBRForm() {
         return () => {
             cancelled = true
         }
-    }, [editingEnsayoId])
+    }, [editingEnsayoId, draftStorageKey])
 
     useEffect(() => {
         if (typeof window === 'undefined') return
-        if (loadingEnsayo) return
+        if (editingEnsayoId) return // Edit mode handles draft check in loadForEdit
         if (restoredDraftKeysRef.current.has(draftStorageKey)) return
 
         restoredDraftKeysRef.current.add(draftStorageKey)
@@ -771,18 +793,12 @@ export default function CBRForm() {
             }
 
             const hydratedDraft = hydrateCBRFormSnapshot(parsed.form)
-
-            if (editingEnsayoId && hydratedFromServerRef.current && areCBRFormsEquivalent(hydratedDraft, hydratedFromServerRef.current)) {
-                localStorage.removeItem(draftStorageKey)
-                return
-            }
-
             setForm(hydratedDraft)
             toast.success('Se restauró un borrador local de CBR.', { duration: 2500 })
         } catch {
             localStorage.removeItem(draftStorageKey)
         }
-    }, [draftStorageKey, editingEnsayoId, loadingEnsayo])
+    }, [draftStorageKey, editingEnsayoId])
 
     useEffect(() => {
         if (typeof window === 'undefined') return
@@ -892,6 +908,43 @@ export default function CBRForm() {
                     )}
                 </div>
             </div>
+
+            {showDraftBanner ? (
+                <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-start gap-2.5 text-sm text-amber-800">
+                        <span className="text-lg leading-none">⚠️</span>
+                        <div>
+                            <p className="font-semibold text-amber-900">Cambios locales no guardados detectados</p>
+                            <p className="text-xs text-amber-700 mt-0.5">
+                                Se encontró un borrador en este navegador que tiene diferencias con la versión guardada en el servidor.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                        <button
+                            onClick={() => {
+                                if (draftData) setForm(draftData)
+                                setShowDraftBanner(false)
+                                toast.success('Borrador local recuperado con éxito.')
+                            }}
+                            className="rounded-lg bg-amber-600 hover:bg-amber-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition"
+                        >
+                            Recuperar Trabajo
+                        </button>
+                        <button
+                            onClick={() => {
+                                localStorage.removeItem(draftStorageKey)
+                                setShowDraftBanner(false)
+                                setDraftData(null)
+                                toast.success('Borrador descartado.')
+                            }}
+                            className="rounded-lg border border-amber-300 bg-white hover:bg-amber-50 px-3.5 py-1.5 text-xs font-semibold text-amber-800 shadow-sm transition"
+                        >
+                            Descartar
+                        </button>
+                    </div>
+                </div>
+            ) : null}
 
             {loadingEnsayo && (
                 <div className="mb-4 h-10 rounded-lg border border-border bg-muted/40 px-3 text-sm text-muted-foreground flex items-center gap-2">
